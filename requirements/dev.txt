@@ -1,0 +1,12 @@
+-r base.txt
+
+black
+flake8
+flake8-import-order>=0.9
+flake8-typing-imports>=1.1
+bandit
+prospector
+
+
+pytest
+pytest-mock

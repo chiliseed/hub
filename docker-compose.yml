@@ -1,0 +1,46 @@
+version: "3.7"
+services:
+
+  db:
+    image: postgres:11.2
+    restart: always
+    container_name: chiliseed_db
+    hostname: postgres
+    volumes: # map data outside the container
+      - ./pg/local/data/postgres/data:/var/lib/postgres
+      - ./pg/local/data/postgresql/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - chiliseed
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        requirements: requirements/dev.txt
+    image: chiliseed/api:latest
+    container_name: chiliseed_api
+    restart: always
+    command: bash /app/runner.sh
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    links:
+      - db
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app
+    networks:
+      - chiliseed
+
+
+networks:
+  chiliseed:

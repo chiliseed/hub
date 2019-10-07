@@ -10,3 +10,4 @@ prospector
 
 pytest
 pytest-mock
+pytest-django

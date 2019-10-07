@@ -29,7 +29,8 @@ def start():
     exec_shell_command(
         'docker ps -q --filter "name=chiliseed_api" '
         '| grep -q . && docker stop chiliseed_api '
-        '&& docker rm -fv chiliseed_api'
+        '&& docker rm -fv chiliseed_api',
+        check=False
     )
     exec_shell_command('docker-compose build')
     exec_shell_command('docker-compose up -d --remove-orphans')
@@ -50,6 +51,50 @@ def rebuild():
     exec_shell_command("docker-compose stop api")
     exec_shell_command("docker-compose build api")
     exec_shell_command("docker-compose up -d --force-recreate api")
+
+
+@cli.command()
+@click.argument("app", required=False)
+def migrate(app):
+    """Create migration and apply it."""
+    if app:
+        click.echo(f"Creating new migration for {app}")
+        exec_shell_command("docker-compose exec api python manage.py makemigrations")
+
+
+@cli.command()
+@click.argument('path', required=False)
+def test(path):
+    """Run pytest.
+
+    Parameters
+    ----------
+    path : :obj:`str`, optional
+        Optional path to a specific tests file and/or specific test
+
+    Returns
+    -------
+    pytest output
+        result of running the tests
+
+    Examples
+    --------
+    To collect and run all tests:
+
+        $ ./tools.py test
+
+    To run specific test file:
+
+        $ ./tools.py test users/tests/test_models.py
+
+    To run specific test:
+
+        $ ./tools.py test users/tests/test_models.py::UserModelTestCase
+    """
+    if path:
+        exec_shell_command(f"docker-compose exec api pytest {path}")
+    else:
+        exec_shell_command("docker-compose exec api pytest")
 
 
 @cli.command()

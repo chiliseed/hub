@@ -155,6 +155,7 @@ DJOSER = {
         # "user": "users.serializers.UserSerializer",
         # "user_create": "users.serializers.UserCreateSerializer",
     },
+    "CREATE_SESSION_ON_LOGIN": True,
 }
 
 

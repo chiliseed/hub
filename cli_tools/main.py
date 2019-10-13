@@ -67,7 +67,11 @@ def migrate(app):
     """Create migration and apply it."""
     if app:
         click.echo(f"Creating new migration for {app}")
+        exec_shell_command("docker-compose exec api python manage.py makemigrations {}".format(app))
+        exec_shell_command("docker-compose exec api python manage.py migrate {}".format(app))
+    else:
         exec_shell_command("docker-compose exec api python manage.py makemigrations")
+        exec_shell_command("docker-compose exec api python manage.py migrate")
 
 
 @cli.command()

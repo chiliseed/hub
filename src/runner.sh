@@ -1,3 +1,9 @@
+until pg_isready -h ${DB_HOST} -p 5432 -U ${DB_USER}:${DB_PASSWORD} -d ${DB_NAME}
+do
+  echo "Waiting for postgres 5 sec ... "
+  sleep 5;
+done
+
 echo "Creating missing migrations"
 python manage.py makemigrations
 

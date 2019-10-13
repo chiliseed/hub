@@ -11,10 +11,9 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
         gcc \
         libpq-dev \
-        postgresql \
-        postgresql-contrib \
         postgresql-client \
         wget && \
+    apt-get clean && \
     pip install -U pip ipython
 
 COPY requirements requirements

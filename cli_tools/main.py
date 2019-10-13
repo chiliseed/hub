@@ -1,5 +1,5 @@
-#!.venv/bin/python
 import subprocess
+import time
 
 import click
 
@@ -25,6 +25,7 @@ def cli():
 @cli.command()
 def start():
     """Startup all project containers."""
+    start_time = time.time()
     click.echo("Starting up all container")
     exec_shell_command(
         'docker ps -q --filter "name=chiliseed_api" '
@@ -32,8 +33,11 @@ def start():
         '&& docker rm -fv chiliseed_api',
         check=False
     )
+    click.echo("Time elapsed: {}".format(time.time() - start_time))
     exec_shell_command('docker-compose build')
+    click.echo("Time elapsed: {}".format(time.time() - start_time))
     exec_shell_command('docker-compose up -d --remove-orphans')
+    click.echo("Time elapsed: {}".format(time.time() - start_time))
 
 
 @cli.command()
@@ -47,10 +51,14 @@ def restart():
 @cli.command()
 def rebuild():
     """Execute api container restart with rebuild."""
+    start_time = time.time()
     click.echo("Restarting and rebuilding api")
     exec_shell_command("docker-compose stop api")
+    click.echo("Time elapsed: {}".format(time.time() - start_time))
     exec_shell_command("docker-compose build api")
+    click.echo("Time elapsed: {}".format(time.time() - start_time))
     exec_shell_command("docker-compose up -d --force-recreate api")
+    click.echo("Time elapsed: {}".format(time.time() - start_time))
 
 
 @cli.command()
@@ -164,7 +172,3 @@ def lint(ctx, path):
     ctx.invoke(pydocstyle, path=path)
     ctx.invoke(prospector, path=path)
     ctx.invoke(bandit, path=path)
-
-
-if __name__ == "__main__":
-    cli()

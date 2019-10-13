@@ -1,4 +1,3 @@
-
 ==================
 Control Center API
 ==================
@@ -17,6 +16,7 @@ How To Install
 --------------
 
 1. Create virtual environment for the project:
+
     .. code-block:: bash
 
         mkdir chiliseed
@@ -27,14 +27,19 @@ How To Install
 
 2. Clone the repo inside ``backend``
 3. Install local requirements:
+
     .. code-block:: bash
 
-        pip install -r requirements/local.txt
+        pip install -e cli_tools
+
+    This will install `tools` package, that contains cli utilities for easy
+    interactions with the environment.
+
 
 4. Run local environment:
     .. code-block:: bash
 
-        ./tools.py start
+        tools start
 
 
 Local tools

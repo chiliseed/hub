@@ -158,5 +158,3 @@ DJOSER = {
     },
     "CREATE_SESSION_ON_LOGIN": True,
 }
-
-

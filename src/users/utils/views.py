@@ -1,3 +1,4 @@
+"""Utilities related to users' views."""
 from django.conf import settings
 
 

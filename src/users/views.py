@@ -1,7 +1,9 @@
+"""Endpoints for users management."""
 from djoser import signals, utils
 from djoser.compat import get_user_email
-from djoser.views import UserViewSet, TokenCreateView, TokenDestroyView
 from djoser.conf import settings as djconf
+from djoser.views import TokenCreateView, TokenDestroyView, UserViewSet
+
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -9,8 +11,10 @@ from users.utils.views import get_email_context
 
 
 class RegisterView(UserViewSet):
+    """User register endpoint."""
 
     def perform_create(self, serializer):
+        """Create user and send activation emails."""
         user = serializer.save()
         signals.user_registered.send(
             sender=self.__class__, user=user, request=self.request
@@ -25,6 +29,7 @@ class RegisterView(UserViewSet):
 
 
 class LoginView(TokenCreateView):
+    """Token based login."""
 
     def _action(self, serializer):
         token = utils.login_user(self.request, serializer.user)
@@ -35,7 +40,9 @@ class LoginView(TokenCreateView):
 
 
 class LogoutView(TokenDestroyView):
+    """Logout endpoint."""
 
     def post(self, request):
+        """Logout user."""
         utils.logout_user(request)
         return Response(status=status.HTTP_204_NO_CONTENT)

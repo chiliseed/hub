@@ -1,5 +1,8 @@
+"""Django app configuration."""
 from django.apps import AppConfig
 
 
 class OrganizationsConfig(AppConfig):
-    name = 'organizations'
+    """App conf."""
+
+    name = "organizations"

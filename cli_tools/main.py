@@ -128,7 +128,7 @@ def flake8(path):
     if not path:
         path = "/app"
     click.echo(f"Running flake8 on path: {path}")
-    exec_shell_command(f"docker-compose exec api flake8 {path}")
+    exec_shell_command(f"docker-compose exec api flake8 {path} --exclude=migrations")
 
 
 @cli.command()
@@ -139,7 +139,7 @@ def pydocstyle(path):
         path = "/app"
     click.echo(f"Running pydocstyle on path: {path}")
     exec_shell_command(
-        f"docker-compose exec api pydocstyle --convention numpy {path}"
+        f'docker-compose exec api pydocstyle --convention numpy {path} --match-dir="^(?!migrations).*"'
     )
 
 

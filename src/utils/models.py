@@ -1,8 +1,7 @@
 """Model related utilities."""
-from hashlib import blake2b
-from uuid import uuid4
-
 from django.db import models
+
+from utils.crypto import get_uuid_hex
 
 
 class BaseModel(models.Model):
@@ -26,7 +25,7 @@ class BaseModel(models.Model):
         update_fields=None,
     ):
         """Add custom, general behavior to model save method."""
-        self.slug = blake2b(uuid4().bytes, digest_size=10).hexdigest()
+        self.slug = get_uuid_hex()
         super().save(
             force_insert=force_insert,
             force_update=force_update,

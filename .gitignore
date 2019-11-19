@@ -4,3 +4,6 @@ pg
 *.pyc
 __pycache__/
 .idea
+
+*.tfplan
+.terraform

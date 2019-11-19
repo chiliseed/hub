@@ -26,7 +26,7 @@ def cli():
 def start():
     """Startup all project containers."""
     start_time = time.time()
-    click.echo("Starting up all container")
+    click.echo("Starting up all project containers")
     exec_shell_command(
         'docker ps -q --filter "name=chiliseed_api" '
         '| grep -q . && docker stop chiliseed_api '

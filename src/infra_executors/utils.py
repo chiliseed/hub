@@ -1,13 +1,11 @@
+import logging
 import subprocess
 
 
-def handle_output(output_stream, printout=True):
-    for line in output_stream.stdout:
-        if printout:
-            print(line.decode(), end="")
+logger = logging.getLogger(__name__)
 
 
-def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None):
+def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None, log_to=None):
     """Execute provided command within shell.
 
     Parameters
@@ -20,6 +18,8 @@ def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None):
         environment variables
     cwd : str
         current working directory
+    log_to : str
+        file to which all logs will be written to
 
     Returns
     -------
@@ -33,7 +33,9 @@ def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     ) as process:
-        for line in process.stdout:
-            print(line.decode(), end="")
+        with open(log_to, 'ab') as logfile:
+            for line in process.stdout:
+                logfile.write(line)
+                logger.info(line.decode())
         process.poll()
     return process

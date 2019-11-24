@@ -5,6 +5,11 @@ terraform {
     region = "us-east-2"
 //    key    = "delivery_service/liberty.tfstate"  this will be provided on runtime
   }
+  required_providers {
+    aws = "~> 2.0"
+    null = "~> 2.0"
+    random = "~> 2.0"
+  }
 }
 
 provider "aws" {}

@@ -8,7 +8,7 @@ from common.crypto import get_uuid_hex
 
 from control_center.settings import BASE_DIR
 
-from infra_executors.utils import execute_shell_command
+from infra_executors.utils import execute_shell_command, extract_outputs
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,9 @@ def create_network(
     )
     if apply_resp.returncode < 0:
         logger.error("Failed to apply a plan %s", plan_file)
-    return
+    else:
+        vpc_outputs = extract_outputs(apply_resp.stdout)
+        logger.info("Created new vpc id=%s", vpc_outputs['vpc_id'])
 
 
 def destroy_network(

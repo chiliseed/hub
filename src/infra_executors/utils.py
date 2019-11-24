@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 
 
@@ -39,3 +40,36 @@ def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None, log_to=Non
                 logger.info(line.decode())
         process.poll()
     return process
+
+
+def extract_outputs(logs):
+    """Extract terraform outputs as python objects.
+
+    Parameters
+    ----------
+    logs : str
+        popen stdout result
+
+    Returns
+    -------
+        outputs : dict
+            key values of extracted terraform outputs
+    """
+    output_lines = logs.splitlines()
+
+    for line in reversed(logs):
+        if 'Outputs:' in line:
+            break
+        output_lines.append(line)
+
+    outputs_joined = "".join(reversed(output_lines)).strip()
+    # remove all '\n   '
+    clean_output1 = re.sub("[\\n]\s+", "", outputs_joined)
+    # replace all ',\n]' with ']'
+    clean_output2 = re.sub(",[\\n]]", "]", clean_output1)
+
+    outputs = {}
+    for clean_line in clean_output2.splitlines():
+        key, value = clean_line.split(" = ")
+        outputs[key] = value
+    return outputs

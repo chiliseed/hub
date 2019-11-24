@@ -1,7 +1,7 @@
 """Model related utilities."""
 from django.db import models
 
-from utils.crypto import get_uuid_hex
+from common.crypto import get_uuid_hex
 
 
 class BaseModel(models.Model):

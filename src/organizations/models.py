@@ -5,7 +5,7 @@ are managed.
 """
 from django.db import models
 
-from utils.models import BaseModel
+from common.models import BaseModel
 
 
 class Organization(BaseModel):

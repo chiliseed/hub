@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+import sys
 from typing import NamedTuple
 
 from common.crypto import get_uuid_hex
@@ -9,6 +10,7 @@ from common.crypto import get_uuid_hex
 from infra_executors.constants import TERRAFORM_DIR, EXEC_LOGS_DIR, TERRAFORM_PLUGIN_DIR
 from infra_executors.utils import execute_shell_command, extract_outputs
 
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 NETWORK_DIR = os.path.join(TERRAFORM_DIR, "network")

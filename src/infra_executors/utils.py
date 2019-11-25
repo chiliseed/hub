@@ -42,25 +42,26 @@ def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None, log_to=Non
     return process.returncode
 
 
-def extract_outputs(logs):
+def extract_outputs(log_file_path):
     """Extract terraform outputs as python objects.
 
     Parameters
     ----------
-    logs : str
-        popen stdout result
+    log_file_path : str
+        path to run log for processing
 
     Returns
     -------
         outputs : dict
             key values of extracted terraform outputs
     """
-    output_lines = logs.splitlines()
+    output_lines = []
 
-    for line in reversed(logs):
-        if 'Outputs:' in line:
-            break
-        output_lines.append(line)
+    with open(log_file_path, 'r') as log_file:
+        for line in reversed(log_file.readlines()):
+            if 'Outputs:' in line:
+                break
+            output_lines.append(line)
 
     outputs_joined = "".join(reversed(output_lines)).strip()
     # remove all '\n   '

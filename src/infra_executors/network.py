@@ -6,17 +6,12 @@ from typing import NamedTuple
 
 from common.crypto import get_uuid_hex
 
-from control_center.settings import BASE_DIR
-
+from infra_executors.constants import TERRAFORM_DIR, EXEC_LOGS_DIR, TERRAFORM_PLUGIN_DIR
 from infra_executors.utils import execute_shell_command, extract_outputs
 
 logger = logging.getLogger(__name__)
 
-INFRA_DIR = os.path.join(BASE_DIR, "infra_executors")
-TERRAFORM_DIR = os.path.join(INFRA_DIR, "terraform")
-EXEC_LOGS_DIR = os.path.join(INFRA_DIR, "exec_logs")
 NETWORK_DIR = os.path.join(TERRAFORM_DIR, "network")
-TERRAFORM_PLUGIN_DIR = os.path.join("~", ".terraform.d", "plugins")
 
 
 class AwsCredentials(NamedTuple):

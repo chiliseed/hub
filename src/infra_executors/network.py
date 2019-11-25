@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 from common.crypto import get_uuid_hex
 
-from infra_executors.constants import TERRAFORM_DIR, EXEC_LOGS_DIR, TERRAFORM_PLUGIN_DIR
+from infra_executors.constants import TERRAFORM_DIR, EXEC_LOGS_DIR, TERRAFORM_PLUGIN_DIR, PLANS_DIR
 from infra_executors.utils import execute_shell_command, extract_outputs
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -65,7 +65,7 @@ def create_network(
         return
 
     logger.info("Planning terraform changes. run_id=%s", params.run_id)
-    plan_file = f"{get_uuid_hex()}_{params.run_id}.tfplan"
+    plan_file = os.path.join(PLANS_DIR, f"{get_uuid_hex()}_{params.run_id}.tfplan")
     plan_cmd = [
         f"terraform plan "
         f"-detailed-exitcode "
@@ -76,8 +76,7 @@ def create_network(
     plan_return_code = execute_shell_command(
         plan_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    # todo terraform out plan should be uploaded to s3
-    # todo and saved together with exec results
+    
     if plan_return_code == 0:
         logger.info("No changes to apply")
         return

@@ -46,7 +46,7 @@ def create_network(
     )
     logger.info("Executing run id=%s", params.run_id)
 
-    run_log = os.path.join(EXEC_LOGS_DIR, f"network_{params.run_id}.log")
+    run_log = os.path.join(EXEC_LOGS_DIR, f"network_create_{params.run_id}.log")
 
     logger.info("Initializing terraform state: %s", env_vars)
 
@@ -55,17 +55,17 @@ def create_network(
         f'-backend-config="key={params.project_name}/network.tfstate" '
         f"-no-color -reconfigure -plugin-dir {TERRAFORM_PLUGIN_DIR}"
     ]
-    init_popen = execute_shell_command(
+    init_return_code = execute_shell_command(
         init_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    if init_popen.returncode < 0:
+    if init_return_code < 0:
         logger.error(
             "Failed to init terraform for backend %s", params.project_name
         )
         return
 
     logger.info("Planning terraform changes. run_id=%s", params.run_id)
-    plan_file = f"{get_uuid_hex()}.tfplan"
+    plan_file = f"{get_uuid_hex()}_{params.run_id}.tfplan"
     plan_cmd = [
         f"terraform plan "
         f"-detailed-exitcode "
@@ -73,16 +73,16 @@ def create_network(
         f"-var-file=network.tfvars "
         f"-out={plan_file}",
     ]
-    plan_popen = execute_shell_command(
+    plan_return_code = execute_shell_command(
         plan_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
     # todo terraform out plan should be uploaded to s3
     # todo and saved together with exec results
-    if plan_popen.returncode == 0:
+    if plan_return_code == 0:
         logger.info("No changes to apply")
         return
 
-    if plan_popen.returncode == 1 or plan_popen.returncode < 0:
+    if plan_return_code == 1 or plan_return_code < 0:
         logger.error("Error executing network plan")
         return
 
@@ -90,14 +90,15 @@ def create_network(
     apply_cmd = [
         f"terraform apply -auto-approve -no-color {plan_file}",
     ]
-    apply_resp = execute_shell_command(
+    apply_return_code = execute_shell_command(
         apply_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    if apply_resp.returncode < 0:
+    if apply_return_code < 0:
         logger.error("Failed to apply a plan %s", plan_file)
     else:
-        vpc_outputs = extract_outputs(apply_resp.stdout)
-        logger.info("Created new vpc id=%s", vpc_outputs['vpc_id'])
+        vpc_outputs = extract_outputs(run_log)
+        print(vpc_outputs)
+        logger.info("Created new vpc id=%s", vpc_outputs["vpc_id"])
 
 
 def destroy_network(
@@ -125,10 +126,10 @@ def destroy_network(
         f"-reconfigure "
         f"-plugin-dir {TERRAFORM_PLUGIN_DIR}"
     ]
-    init_popen = execute_shell_command(
+    init_return_code = execute_shell_command(
         init_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    if init_popen.returncode < 0:
+    if init_return_code < 0:
         logger.error(
             "Failed to init terraform for backend %s", params.project_name
         )
@@ -140,11 +141,12 @@ def destroy_network(
         f"-no-color "
         f"-var-file=network.tfvars"
     ]
-    destroy_popen = execute_shell_command(
+    destroy_return_code = execute_shell_command(
         destroy_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    if destroy_popen.returncode < 0:
+    if destroy_return_code < 0:
         logger.error("Failed to destroy network. run_id=%s", params.run_id)
+
     return
 
 
@@ -155,7 +157,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "cmd",
         type=str,
-        default='create',
+        default="create",
         help="Sub command. One of: create/destroy",
     )
     parser.add_argument(

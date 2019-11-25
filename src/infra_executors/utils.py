@@ -24,7 +24,7 @@ def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None, log_to=Non
 
     Returns
     -------
-        subprocess.CompletedProcess
+        process return code : int
     """
     with subprocess.Popen(
         cmd,
@@ -39,7 +39,7 @@ def execute_shell_command(cmd: list, env_vars: dict = None, cwd=None, log_to=Non
                 logfile.write(line)
                 logger.info(line.decode())
         process.poll()
-    return process
+    return process.returncode
 
 
 def extract_outputs(logs):

@@ -4,17 +4,35 @@ import time
 import click
 
 
-def exec_shell_command(cmd, check=True):
+def exec_shell_command(cmd):
     """Execute shell command.
 
     Parameters
     ----------
     cmd : str
         full shell command as a string
-    check : bool, defaults to True
-        whether subprocess should check for error codes
     """
-    subprocess.run(cmd, shell=True, check=check)
+    return subprocess.run(cmd, shell=True).returncode
+
+
+def do_commands(commands):
+    """Execute commands one by one and only of previous command succeeded.
+
+    Parameters
+    ----------
+    commands : iterable(str)
+        list of commands to be executed
+
+    Returns
+    -------
+    None
+    """
+    start_time = time.time()
+    for cmd in commands:
+        return_code = exec_shell_command(cmd)
+        click.echo("Time elapsed: {}".format(time.time() - start_time))
+        if return_code != 0:
+            return
 
 
 @click.group()
@@ -25,40 +43,37 @@ def cli():
 @cli.command()
 def start():
     """Startup all project containers."""
-    start_time = time.time()
     click.echo("Starting up all project containers")
-    exec_shell_command(
+    commands = (
         'docker ps -q --filter "name=chiliseed_api" '
         '| grep -q . && docker stop chiliseed_api '
         '&& docker rm -fv chiliseed_api',
-        check=False
+        'docker-compose build',
+        'docker-compose up -d --remove-orphans',
     )
-    click.echo("Time elapsed: {}".format(time.time() - start_time))
-    exec_shell_command('docker-compose build')
-    click.echo("Time elapsed: {}".format(time.time() - start_time))
-    exec_shell_command('docker-compose up -d --remove-orphans')
-    click.echo("Time elapsed: {}".format(time.time() - start_time))
+
+    do_commands(commands)
 
 
 @cli.command()
 def restart():
     """Restart api container, without build and with recreate container."""
     click.echo('Restarting api')
-    exec_shell_command("docker-compose stop api")
-    exec_shell_command('docker-compose up -d --force-recreate api api')
+    do_commands((
+        "docker-compose stop api",
+        'docker-compose up -d --force-recreate api api',
+    ))
 
 
 @cli.command()
 def rebuild():
     """Execute api container restart with rebuild."""
-    start_time = time.time()
     click.echo("Restarting and rebuilding api")
-    exec_shell_command("docker-compose stop api")
-    click.echo("Time elapsed: {}".format(time.time() - start_time))
-    exec_shell_command("docker-compose build api")
-    click.echo("Time elapsed: {}".format(time.time() - start_time))
-    exec_shell_command("docker-compose up -d --force-recreate api")
-    click.echo("Time elapsed: {}".format(time.time() - start_time))
+    do_commands((
+        "docker-compose stop api",
+        "docker-compose build api",
+        "docker-compose up -d --force-recreate api",
+    ))
 
 
 @cli.command()
@@ -67,11 +82,16 @@ def migrate(app):
     """Create migration and apply it."""
     if app:
         click.echo(f"Creating new migration for {app}")
-        exec_shell_command("docker-compose exec api python manage.py makemigrations {}".format(app))
-        exec_shell_command("docker-compose exec api python manage.py migrate {}".format(app))
+        commands = (
+            "docker-compose exec api python manage.py makemigrations {}".format(app),
+            "docker-compose exec api python manage.py migrate {}".format(app)
+        )
     else:
-        exec_shell_command("docker-compose exec api python manage.py makemigrations")
-        exec_shell_command("docker-compose exec api python manage.py migrate")
+        commands = (
+            "docker-compose exec api python manage.py makemigrations",
+            "docker-compose exec api python manage.py migrate",
+        )
+    do_commands(commands)
 
 
 @cli.command()
@@ -116,7 +136,7 @@ def black(path):
     if not path:
         path = "/app"
     click.echo(f"Running black on path: {path}")
-    exec_shell_command(
+    return exec_shell_command(
         f"docker-compose exec api black --line-length 78 {path}"
     )
 
@@ -128,7 +148,7 @@ def flake8(path):
     if not path:
         path = "/app"
     click.echo(f"Running flake8 on path: {path}")
-    exec_shell_command(f"docker-compose exec api flake8 {path} --exclude=migrations")
+    return exec_shell_command(f"docker-compose exec api flake8 {path} --exclude=migrations --min-python-version 3.7.0")
 
 
 @cli.command()
@@ -138,7 +158,7 @@ def pydocstyle(path):
     if not path:
         path = "/app"
     click.echo(f"Running pydocstyle on path: {path}")
-    exec_shell_command(
+    return exec_shell_command(
         f'docker-compose exec api pydocstyle --convention numpy {path} --match-dir="^(?!migrations).*"'
     )
 
@@ -150,7 +170,7 @@ def prospector(path):
     if not path:
         path = "/app"
     click.echo(f"Running prospector on path: {path}")
-    exec_shell_command(f"docker-compose exec api prospector {path}")
+    return exec_shell_command(f"docker-compose exec api prospector {path}")
 
 
 @cli.command()
@@ -181,8 +201,15 @@ def lint(ctx, path):
     if not path:
         path = "/app"
 
-    ctx.invoke(black, path=path)
-    ctx.invoke(flake8, path=path)
-    ctx.invoke(pydocstyle, path=path)
-    ctx.invoke(prospector, path=path)
-    ctx.invoke(bandit, path=path)
+    linter_jobs = (
+        black,
+        flake8,
+        pydocstyle,
+        prospector,
+        bandit,
+        mypy,
+    )
+    for job in linter_jobs:
+        return_code = ctx.invoke(job, path=path)
+        if return_code != 0:
+            return

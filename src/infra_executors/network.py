@@ -2,35 +2,22 @@
 import argparse
 import logging
 import os
-import sys
-from typing import NamedTuple
 
 from common.crypto import get_uuid_hex
 
-from infra_executors.constants import TERRAFORM_DIR, EXEC_LOGS_DIR, TERRAFORM_PLUGIN_DIR, PLANS_DIR
+from infra_executors.constants import (
+    AwsCredentials,
+    EXEC_LOGS_DIR,
+    GeneralConfiguration,
+    PLANS_DIR,
+    TERRAFORM_DIR,
+    TERRAFORM_PLUGIN_DIR,
+)
 from infra_executors.utils import execute_shell_command, extract_outputs
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
 logger = logging.getLogger(__name__)
-
 NETWORK_DIR = os.path.join(TERRAFORM_DIR, "network")
-
-
-class AwsCredentials(NamedTuple):
-    """AWS credentials configs."""
-
-    access_key: str
-    secret_key: str
-    session_key: str
-    region: str = "us-east-1"  # N.Virginia
-
-
-class GeneralConfiguration(NamedTuple):
-    """Common execution configs."""
-
-    project_name: str
-    env_name: str
-    run_id: str
 
 
 def create_network(
@@ -46,7 +33,9 @@ def create_network(
     )
     logger.info("Executing run id=%s", params.run_id)
 
-    run_log = os.path.join(EXEC_LOGS_DIR, f"network_create_{params.run_id}.log")
+    run_log = os.path.join(
+        EXEC_LOGS_DIR, f"network_create_{params.run_id}.log"
+    )
 
     logger.info("Initializing terraform state: %s", env_vars)
 
@@ -65,7 +54,7 @@ def create_network(
         return
 
     logger.info("Planning terraform changes. run_id=%s", params.run_id)
-    plan_file = os.path.join(PLANS_DIR, f"{get_uuid_hex()}_{params.run_id}.tfplan")
+    plan_file = os.path.join(PLANS_DIR, f"network_{params.run_id}.tfplan")
     plan_cmd = [
         f"terraform plan "
         f"-detailed-exitcode "
@@ -76,7 +65,7 @@ def create_network(
     plan_return_code = execute_shell_command(
         plan_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    
+
     if plan_return_code == 0:
         logger.info("No changes to apply")
         return
@@ -96,7 +85,6 @@ def create_network(
         logger.error("Failed to apply a plan %s", plan_file)
     else:
         vpc_outputs = extract_outputs(run_log)
-        print(vpc_outputs)
         logger.info("Created new vpc id=%s", vpc_outputs["vpc_id"])
 
 
@@ -190,5 +178,5 @@ if __name__ == "__main__":
 
     if args.cmd == "create":
         create_network(aws_creds, common)
-    else:
+    if args.cmd == "destroy":
         destroy_network(aws_creds, common)

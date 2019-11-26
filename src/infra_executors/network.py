@@ -47,7 +47,7 @@ def create_network(
     init_return_code = execute_shell_command(
         init_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    if init_return_code < 0:
+    if init_return_code != 0:
         logger.error(
             "Failed to init terraform for backend %s", params.project_name
         )
@@ -81,11 +81,12 @@ def create_network(
     apply_return_code = execute_shell_command(
         apply_cmd, env_vars, NETWORK_DIR, log_to=run_log
     )
-    if apply_return_code < 0:
+    if apply_return_code != 0:
         logger.error("Failed to apply a plan %s", plan_file)
     else:
         vpc_outputs = extract_outputs(run_log)
         logger.info("Created new vpc id=%s", vpc_outputs["vpc_id"])
+        return vpc_outputs["vpc_id"]
 
 
 def destroy_network(

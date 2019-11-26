@@ -1,7 +1,14 @@
+data "aws_subnet_ids" "public" {
+  vpc_id = var.vpc_id
+  tags = {
+    Type = "public"
+  }
+}
+
 resource "aws_security_group" "db" {
   name        = "${var.environment}_db"
   description = "Used in ${var.environment}"
-  vpc_id      = module.network.vpc_id
+  vpc_id      = var.vpc_id
 
   tags = {
     Name        = "${var.environment}_db"
@@ -12,22 +19,21 @@ resource "aws_security_group" "db" {
 module "master" {
   source = "../modules/db"
 
-  identifier = var.db_identifier
+  identifier = var.identifier
 
   engine            = "postgres"
   engine_version    = "11.2"
-  instance_type     = var.db_instance_type
-  allocated_storage = var.db_allocated_storage
+  instance_type     = var.instance_type
+  allocated_storage = var.allocated_storage
   storage_encrypted = false
 
-  # postgres doesn't have options
   major_engine_version = "11"
 
-  name        = var.db_name
+  name        = var.name
   name_prefix = var.environment
 
-  username = var.db_username
-  password = var.db_password
+  username = var.username
+  password = var.password
   port     = "5432"
 
   security_group_ids = [aws_security_group.db.id]
@@ -40,10 +46,10 @@ module "master" {
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
 
   # DB subnet group
-  subnet_ids = flatten([module.network.public_subnet_ids])
+  subnet_ids = data.aws_subnet_ids.public
 
   # Snapshot name upon DB deletion
-  final_snapshot_identifier = "${var.db_identifier}-${var.environment}-final"
+  final_snapshot_identifier = "${var.identifier}-${var.environment}-final"
 
   # Database Deletion Protection
   deletion_protection = false
@@ -56,16 +62,16 @@ module "master" {
 
 
 module "read-replica" {
-  source = "./modules/db"
+  source = "../modules/db"
 
-  identifier = "${var.db_identifier}-read"
+  identifier = "${var.identifier}-read"
 
   replicate_source_db = module.master.instance_id
 
   engine            = "postgres"
   engine_version    = "11.2"
-  instance_type     = var.db_instance_type
-  allocated_storage = var.db_allocated_storage
+  instance_type     = var.instance_type
+  allocated_storage = var.allocated_storage
   storage_encrypted = false
 
   # Username and password must not be set for replicas

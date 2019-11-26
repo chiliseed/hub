@@ -160,7 +160,17 @@ def bandit(path):
     if not path:
         path = "/app"
     click.echo(f"Running bandit on path: {path}")
-    exec_shell_command(f"docker-compose exec api bandit {path}")
+    return exec_shell_command(f"docker-compose exec api bandit {path}")
+
+
+@cli.command()
+@click.argument("path", required=False)
+def mypy(path):
+    """Run static type checker for the code in path."""
+    if not path:
+        path = "/app"
+    click.echo(f"Running mypy on path: {path}")
+    return exec_shell_command(f"docker-compose exec api mypy {path} --strict")
 
 
 @cli.command()

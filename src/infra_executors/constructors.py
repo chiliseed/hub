@@ -9,7 +9,7 @@ def build_env_vars(
     aws_credentials: "AwsCredentials",
     generic_configs: "GeneralConfiguration",
     cmd_params: Optional[NamedTuple],
-) -> Mapping[str, Union[str, int, float]]:
+) -> Mapping[str, str]:
     """Construct environment variables for terraform.
 
     Parameters
@@ -33,10 +33,10 @@ def build_env_vars(
     )
 
     for key, value in enumerate(generic_configs):
-        env_vars[f"TF_VAR_{key}"] = value
+        env_vars[f"TF_VAR_{key}"] = str(value)
 
     if cmd_params:
         for key, value in enumerate(cmd_params):
-            env_vars[f"TF_VAR_{key}"] = value
+            env_vars[f"TF_VAR_{key}"] = str(value)
 
     return env_vars

@@ -1,4 +1,10 @@
 import logging
 import sys
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+FORMAT = "%(asctime)-27s %(name)-22s %(funcName)s %(levelname)s %(message)s %(filename)s"
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format=FORMAT)
+
+
+def get_logger(name: str):
+    """Returns configured logger."""
+    return logging.getLogger(name)

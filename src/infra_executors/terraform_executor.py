@@ -1,23 +1,25 @@
 """Executor for terraform configurations."""
-import logging
 import os
 from typing import List, Mapping, NamedTuple, Optional, TYPE_CHECKING
 
+from infra_executors.constants import (
+    EXEC_LOGS_DIR,
+    PLANS_DIR,
+    TERRAFORM_DIR,
+    TERRAFORM_PLUGIN_DIR,
+)
 from infra_executors.constructors import build_env_vars
+from infra_executors.logger import get_logger
 from infra_executors.utils import execute_shell_command, extract_outputs
 
 if TYPE_CHECKING:
     from infra_executors.constants import (
         AwsCredentials,
         GeneralConfiguration,
-        TERRAFORM_DIR,
-        EXEC_LOGS_DIR,
-        PLANS_DIR,
-        TERRAFORM_PLUGIN_DIR,
     )
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ExecutorConfiguration(NamedTuple):
@@ -69,10 +71,12 @@ class TerraformExecutor:
 
     @property
     def variables_file(self) -> str:
+        """Build relative path in config_location to terraform tfvars file."""
         return f"{self.executor_configs.variables_file_name}.tfvars"
 
     @property
     def state_key(self) -> str:
+        """Build terraform state key for the run."""
         return f"{self.general_configs.project_name}/{self.executor_configs.name}.tfstate"  # noqa
 
     def execute_command(self, cmd: List[str]) -> int:
@@ -119,7 +123,9 @@ class TerraformExecutor:
             return False
 
         if plan_return_code == 1 or plan_return_code < 0:
-            logger.error("Error executing %s plan", self.executor_configs.name)
+            logger.error(
+                "Error executing %s plan", self.executor_configs.name
+            )
             return False
         return True
 
@@ -133,7 +139,10 @@ class TerraformExecutor:
             logger.error("Failed to apply a plan %s", self.plan_file)
             return {}
 
-        logger.info("Successfully applied a plan. run_id=%s", self.general_configs.run_id)
+        logger.info(
+            "Successfully applied a plan. run_id=%s",
+            self.general_configs.run_id,
+        )
         return extract_outputs(self.run_log)
 
     def execute_apply(self) -> Mapping[str, str]:
@@ -151,11 +160,13 @@ class TerraformExecutor:
         """Run terraform destroy."""
         try:
             self.init_terraform()
-            self.execute_command([
-                f"terraform destroy "
-                f"-auto-approve "
-                f"-no-color "
-                f"-var-file={self.variables_file}"
-            ])
+            self.execute_command(
+                [
+                    f"terraform destroy "
+                    f"-auto-approve "
+                    f"-no-color "
+                    f"-var-file={self.variables_file}"
+                ]
+            )
         except TerraformExecutorError:
             logger.error("Failed to destroy infrastructure")

@@ -1,6 +1,5 @@
 """Creates the vpc and it's network."""
 import argparse
-import logging
 from typing import Mapping
 
 from common.crypto import get_uuid_hex
@@ -9,13 +8,14 @@ from infra_executors.constants import (
     AwsCredentials,
     GeneralConfiguration,
 )
+from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import (
     ExecutorConfiguration,
     TerraformExecutor,
 )
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_network(

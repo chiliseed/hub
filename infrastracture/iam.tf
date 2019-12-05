@@ -20,6 +20,7 @@ resource "aws_iam_user_policy" "ecs_deployer_policy" {
                 "ecr:*",
                 "iam:GetRole",
                 "iam:ListAttachedRolePolicies",
+                "iam:CreateServiceLinkedRole",
                 "logs:CreateLogGroup",
                 "rds:*",
                 "s3:*",

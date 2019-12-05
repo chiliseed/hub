@@ -42,6 +42,8 @@ resource "aws_db_instance" "db" {
   storage_encrypted = var.storage_encrypted
   kms_key_id        = var.kms_key_id
 
+  ca_cert_identifier = "rds-ca-2019"
+
   name                                = var.name
   username                            = var.username
   password                            = var.password

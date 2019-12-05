@@ -2,6 +2,8 @@
 import os
 from typing import List, Mapping, NamedTuple, Optional, TYPE_CHECKING
 
+from common.crypto import get_uuid_hex
+
 from infra_executors.constants import (
     EXEC_LOGS_DIR,
     PLANS_DIR,
@@ -68,7 +70,7 @@ class TerraformExecutor:
         )
         self.plan_file = os.path.join(
             PLANS_DIR,
-            f"{executor_configs.name}_{general_configs.run_id}.tfplan",
+            f"{executor_configs.name}_{general_configs.run_id}_{get_uuid_hex()}.tfplan",
         )
 
     def execute_command(self, cmd: List[str]) -> int:

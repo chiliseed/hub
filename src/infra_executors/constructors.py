@@ -32,13 +32,14 @@ def build_env_vars(
         AWS_DEFAULT_REGION=aws_credentials.region,
     )
 
-    for key, value in enumerate(generic_configs):
+    for key, value in generic_configs._asdict().items():
         env_vars[f"TF_VAR_{key}"] = str(value)
 
     if cmd_params:
-        for key, value in enumerate(cmd_params):
+        for key, value in cmd_params._asdict().items():
             env_vars[f"TF_VAR_{key}"] = str(value)
 
+    print("env vars: ", env_vars)
     return env_vars
 
 

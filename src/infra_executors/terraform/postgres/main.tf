@@ -1,3 +1,19 @@
+terraform {
+  required_version = ">=0.12.1"
+  backend "s3" {
+    bucket = "chiliseed-dev-terraform-states"
+    region = "us-east-2"
+//    key    = "delivery_service/liberty.tfstate"  this will be provided on runtime
+  }
+  required_providers {
+    aws = "~> 2.39.0"
+    null = "~> 2.1.2"
+    random = "~> 2.2.1"
+  }
+}
+
+provider "aws" {}
+
 data "aws_subnet_ids" "public" {
   vpc_id = var.vpc_id
   tags = {
@@ -22,7 +38,7 @@ module "master" {
   identifier = var.identifier
 
   engine            = "postgres"
-  engine_version    = "11.2"
+  engine_version    = "11.5"
   instance_type     = var.instance_type
   allocated_storage = var.allocated_storage
   storage_encrypted = false
@@ -46,7 +62,7 @@ module "master" {
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
 
   # DB subnet group
-  subnet_ids = data.aws_subnet_ids.public
+  subnet_ids = data.aws_subnet_ids.public.ids
 
   # Snapshot name upon DB deletion
   final_snapshot_identifier = "${var.identifier}-${var.environment}-final"

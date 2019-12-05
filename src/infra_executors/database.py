@@ -3,6 +3,7 @@ import argparse
 from typing import NamedTuple, Mapping
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
+from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
 
@@ -24,7 +25,18 @@ def create_postgresql(
 ) -> Mapping[str, str]:
     """Create a database."""
     logger.info("Executing run id=%s", params.run_id)
-    executor = TerraformExecutor(creds, params, db_conf, ExecutorConfiguration("postgres_create", "postgres", "db"))
+    executor = TerraformExecutor(
+        creds,
+        params,
+        cmd_configs=db_conf,
+        executor_configs=ExecutorConfiguration(
+            name="postgres",
+            action="create",
+            config_dir="postgres",
+            state_key=build_state_key(params, "postgres"),
+            variables_file_name="db.tfvars",
+        )
+    )
     return executor.execute_apply()
 
 
@@ -59,6 +71,11 @@ if __name__ == "__main__":
         default="develop",
         help="The name of your environment. Example: develop",
     )
+    parser.add_argument(
+        "vpc_id",
+        type=str,
+        help="The id of the vpc. Example: vpc-0c5b94e64b709fa24",
+    )
     parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
     parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")
     parser.add_argument(
@@ -74,10 +91,10 @@ if __name__ == "__main__":
         args.aws_access_key, args.aws_secret_key, "", args.aws_region
     )
     common = GeneralConfiguration(
-        args.project_name, args.environment, args.run_id
+        args.project_name, args.environment, args.run_id, args.vpc_id
     )
     cmd_configs = DBConfigs(
-        identifier="chiliseed_executor_test",
+        identifier="chiliseed-executor-test",
         name="control_center",
         username="chiliseed",
         password="1ZrXivL86bSr",

@@ -40,3 +40,23 @@ def build_env_vars(
             env_vars[f"TF_VAR_{key}"] = str(value)
 
     return env_vars
+
+
+def build_state_key(generic_configs: "GeneralConfiguration", component_name: str) -> str:
+    """Construct a state key in a unified way.
+
+    Parameters
+    ----------
+    generic_configs : infra_executors.constants.GeneralConfiguration
+        common configs for every terraform execution.
+    component_name : str
+        a name of the constructed component. i.e.: network or postgres
+
+    Returns
+    -------
+    state key : str
+        s3 key path where the state will be saved
+    """
+    return f"{generic_configs.project_name}/" \
+           f"{generic_configs.env_name}/" \
+           f"{component_name}.tfstate"

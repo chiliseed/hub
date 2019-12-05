@@ -26,7 +26,9 @@ class ExecutorConfiguration(NamedTuple):
     """Terraform executor configurations."""
 
     name: str
+    action: str
     config_dir: str
+    state_key: str
     variables_file_name: str = ""
 
 
@@ -62,37 +64,30 @@ class TerraformExecutor:
             TERRAFORM_DIR, executor_configs.config_dir
         )
         self.run_log = os.path.join(
-            EXEC_LOGS_DIR, f"network_create_{general_configs.run_id}.log"
+            EXEC_LOGS_DIR, f"{executor_configs.name}_{executor_configs.action}_{general_configs.run_id}.log"  # noqa
         )
         self.plan_file = os.path.join(
             PLANS_DIR,
             f"{executor_configs.name}_{general_configs.run_id}.tfplan",
         )
 
-    @property
-    def variables_file(self) -> str:
-        """Build relative path in config_location to terraform tfvars file."""
-        return f"{self.executor_configs.variables_file_name}.tfvars"
-
-    @property
-    def state_key(self) -> str:
-        """Build terraform state key for the run."""
-        return f"{self.general_configs.project_name}/{self.executor_configs.name}.tfstate"  # noqa
-
     def execute_command(self, cmd: List[str]) -> int:
         """Execute terraform shell commands."""
+        logger.info("Executing terraform with vars_file=%s", self.executor_configs.variables_file_name)
         return execute_shell_command(
             cmd, self.env_vars, self.config_location, self.run_log
         )
 
     def init_terraform(self) -> None:
         """Initialize terraform state."""
-        logger.info("Initializing terraform state")
+        logger.info("Initializing terraform state. state_key=%s", self.executor_configs.state_key)
         init_return_code = self.execute_command(
             [
                 f"terraform init "
-                f'-backend-config="key={self.state_key}" '
-                f"-no-color -reconfigure -plugin-dir {TERRAFORM_PLUGIN_DIR}"
+                f'-backend-config="key={self.executor_configs.state_key}" '
+                f"-no-color "
+                f"-reconfigure "
+                f"-plugin-dir {TERRAFORM_PLUGIN_DIR}"
             ]
         )
         if init_return_code != 0:
@@ -113,7 +108,7 @@ class TerraformExecutor:
                 f"terraform plan "
                 f"-detailed-exitcode "
                 f"-no-color "
-                f"-var-file={self.variables_file} "
+                f"-var-file={self.executor_configs.variables_file_name} "
                 f"-out={self.plan_file}",
             ]
         )
@@ -165,7 +160,7 @@ class TerraformExecutor:
                     f"terraform destroy "
                     f"-auto-approve "
                     f"-no-color "
-                    f"-var-file={self.variables_file}"
+                    f"-var-file={self.executor_configs.variables_file_name}"
                 ]
             )
         except TerraformExecutorError:

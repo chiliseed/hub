@@ -8,6 +8,7 @@ from infra_executors.constants import (
     AwsCredentials,
     GeneralConfiguration,
 )
+from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import (
     ExecutorConfiguration,
@@ -27,7 +28,11 @@ def create_network(
         params,
         cmd_configs=None,
         executor_configs=ExecutorConfiguration(
-            "network_create", "network", "network"
+            name="network",
+            action="create",
+            config_dir="network",
+            state_key=build_state_key(params, "network"),
+            variables_file_name="network.tfvars",
         ),
     )
     return executor.execute_apply()
@@ -42,7 +47,11 @@ def destroy_network(
         params,
         cmd_configs=None,
         executor_configs=ExecutorConfiguration(
-            "network_destroy", "network", "network"
+            name="network",
+            action="destroy",
+            config_dir="network",
+            state_key=build_state_key(params, "network"),
+            variables_file_name="network.tfvars",
         ),
     )
     return executor.execute_destroy()

@@ -74,14 +74,14 @@ def extract_outputs(log_file_path: str) -> Mapping[str, str]:
         for line in reversed(log_file.readlines()):
             if "Outputs:" in line:
                 break
+            if not line.strip():
+                continue
             output_lines.append(line)
-
     outputs_joined = "".join(reversed(output_lines)).strip()
     # remove all '\n   '
-    clean_output1 = re.sub(r"[\\n]\s+", "", outputs_joined)
+    clean_output1 = re.sub(r"[\n]\s+", "", outputs_joined)
     # replace all ',\n]' with ']'
-    clean_output2 = re.sub(r",[\\n]]", "]", clean_output1)
-
+    clean_output2 = re.sub(r",[\n]]", "]", clean_output1)
     outputs = {}
     for clean_line in clean_output2.splitlines():
         key, value = clean_line.split(" = ")

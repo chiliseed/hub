@@ -6,9 +6,9 @@ terraform {
 //    key    = "delivery_service/liberty.tfstate"  this will be provided on runtime
   }
   required_providers {
-    aws = "~> 2.0"
-    null = "~> 2.0"
-    random = "~> 2.0"
+    aws = "~> 2.39.0"
+    null = "~> 2.1.2"
+    random = "~> 2.2.1"
   }
 }
 

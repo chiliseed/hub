@@ -70,7 +70,7 @@ class TerraformExecutor:
         )
         self.plan_file = os.path.join(
             PLANS_DIR,
-            f"{executor_configs.name}_{general_configs.run_id}_{get_uuid_hex()}.tfplan",
+            f"{executor_configs.name}_{general_configs.run_id}_{get_uuid_hex(4)}.tfplan",
         )
 
     def execute_command(self, cmd: List[str]) -> int:

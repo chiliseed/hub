@@ -45,7 +45,18 @@ def destroy_postgresql(
 ) -> None:
     """Destroy database."""
     logger.info("Executing destroy postgres. run_id=%s", params.run_id)
-    executor = TerraformExecutor(creds, params, db_conf, ExecutorConfiguration("postgres_create", "postgres", "db"))
+    executor = TerraformExecutor(
+        creds,
+        params,
+        cmd_configs=db_conf,
+        executor_configs=ExecutorConfiguration(
+            name="postgres",
+            action="destroy",
+            config_dir="postgres",
+            state_key=build_state_key(params, "postgres"),
+            variables_file_name="db.tfvars",
+        )
+    )
     executor.execute_destroy()
     logger.info("DB destroyed")
 

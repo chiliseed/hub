@@ -84,6 +84,6 @@ def extract_outputs(log_file_path: str) -> Mapping[str, str]:
     clean_output2 = re.sub(r",[\n]]", "]", clean_output1)
     outputs = {}
     for clean_line in clean_output2.splitlines():
-        key, value = clean_line.split(" = ")
-        outputs[key] = value
+        key, value = clean_line.split("=")
+        outputs[key.strip()] = value.strip()
     return outputs

@@ -3,7 +3,7 @@
 # Some other ECS policy examples http://docs.aws.amazon.com/AmazonECS/latest/developerguide/IAMPolicyExamples.html
 
 resource "aws_iam_role" "ecs_instance_role" {
-  name = "${var.environment}_ecs_instance_role"
+  name = "${var.env_name}_${var.cluster}_ecs_instance_role"
 
   assume_role_policy = <<EOF
 {
@@ -21,9 +21,8 @@ resource "aws_iam_role" "ecs_instance_role" {
 EOF
 }
 
-# todo add health check path as variable
 resource "aws_iam_instance_profile" "ecs" {
-  name = "${var.environment}_ecs_instance_profile"
+  name = "${var.env_name}_${var.cluster}_ecs_instance_profile"
   path = "/"
   role = aws_iam_role.ecs_instance_role.name
 }

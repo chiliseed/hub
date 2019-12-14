@@ -180,3 +180,8 @@ output "read_option_group_arn" {
   description = "The ARN of the db option group"
   value       = module.read-replica.option_group_arn
 }
+
+output "security_group_id" {
+  description = "DB security group"
+  value       = aws_security_group.db.id
+}

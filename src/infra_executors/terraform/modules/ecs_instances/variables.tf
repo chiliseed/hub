@@ -50,7 +50,7 @@ variable "iam_instance_profile_id" {
 }
 
 variable "public_subnet_ids" {
-  type        = "list"
+  type        = list(string)
   description = "The list of public subnets to place the instances in"
 }
 

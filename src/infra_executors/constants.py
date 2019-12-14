@@ -8,6 +8,7 @@ TERRAFORM_DIR = os.path.join(INFRA_DIR, "terraform")
 EXEC_LOGS_DIR = os.path.join(INFRA_DIR, "exec_logs")
 TERRAFORM_PLUGIN_DIR = os.path.join("~", ".terraform.d", "plugins")
 PLANS_DIR = os.path.join(INFRA_DIR, "terraform_plans")
+KEYS_DIR = os.path.join(INFRA_DIR, "key_pairs")
 
 
 class AwsCredentials(NamedTuple):
@@ -16,7 +17,7 @@ class AwsCredentials(NamedTuple):
     access_key: str
     secret_key: str
     session_key: str
-    region: str = "us-east-1"  # N.Virginia
+    region: str = "us-east-2"  # Ohio
 
 
 class GeneralConfiguration(NamedTuple):

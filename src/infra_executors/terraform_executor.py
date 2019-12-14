@@ -105,15 +105,23 @@ class TerraformExecutor:
             "Planning terraform changes. run_id=%s",
             self.general_configs.run_id,
         )
-        plan_return_code = self.execute_command(
-            [
-                f"terraform plan "
-                f"-detailed-exitcode "
-                f"-no-color "
-                f"-var-file={self.executor_configs.variables_file_name} "
-                f"-out={self.plan_file}",
-            ]
-        )
+        if self.executor_configs.variables_file_name:
+            cmd = [
+                    f"terraform plan "
+                    f"-detailed-exitcode "
+                    f"-no-color "
+                    f"-var-file={self.executor_configs.variables_file_name} "
+                    f"-out={self.plan_file}",
+                ]
+        else:
+             cmd = [
+                    f"terraform plan "
+                    f"-detailed-exitcode "
+                    f"-no-color "
+                    f"-out={self.plan_file}",
+                ]
+
+        plan_return_code = self.execute_command(cmd)
 
         if plan_return_code == 0:
             logger.info("No changes to apply")
@@ -157,13 +165,19 @@ class TerraformExecutor:
         """Run terraform destroy."""
         try:
             self.init_terraform()
-            self.execute_command(
-                [
+            if self.executor_configs.variables_file_name:
+                cmd = [
                     f"terraform destroy "
                     f"-auto-approve "
                     f"-no-color "
                     f"-var-file={self.executor_configs.variables_file_name}"
                 ]
-            )
+            else:
+                cmd = [
+                    f"terraform destroy "
+                    f"-auto-approve "
+                    f"-no-color "
+                ]
+            self.execute_command(cmd)
         except TerraformExecutorError:
             logger.error("Failed to destroy infrastructure")

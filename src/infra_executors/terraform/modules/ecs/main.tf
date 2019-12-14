@@ -16,7 +16,8 @@ module "ecs_instances" {
   depends_id              = ""
   custom_userdata         = var.custom_userdata
   cloudwatch_prefix       = var.cloudwatch_prefix
-  target_group_arns       = module.alb.target_group_arns
+  target_group_arns = []
+//  target_group_arns       = module.alb.target_group_arns
 }
 
 resource "aws_ecs_cluster" "cluster" {

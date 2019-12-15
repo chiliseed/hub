@@ -44,4 +44,5 @@ variable "password" {
 variable "allowed_security_groups_ids" {
   description = "Security groups which will be allowed to connect to the DB."
   type        = list(string)
+  default     = []
 }

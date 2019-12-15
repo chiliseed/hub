@@ -32,6 +32,16 @@ resource "aws_security_group" "db" {
   }
 }
 
+resource "aws_security_group_rule" "ingress" {
+  count                    = length(var.allowed_security_groups_ids)
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "TCP"
+  source_security_group_id = var.allowed_security_groups_ids[count.index]
+  security_group_id        = aws_security_group.db.id
+}
+
 module "master" {
   source = "../modules/db"
 

@@ -3,11 +3,11 @@ terraform {
   backend "s3" {
     bucket = "chiliseed-dev-terraform-states"
     region = "us-east-2"
-//    key    = "path/to.tfstate"  this will be provided on runtime
+    //    key    = "path/to.tfstate"  this will be provided on runtime
   }
   required_providers {
-    aws = "~> 2.39.0"
-    null = "~> 2.1.2"
+    aws    = "~> 2.39.0"
+    null   = "~> 2.1.2"
     random = "~> 2.2.1"
   }
 }

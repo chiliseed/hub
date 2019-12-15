@@ -3,12 +3,12 @@ terraform {
   backend "s3" {
     bucket = "chiliseed-dev-terraform-states"
     region = "us-east-2"
-//    key    = "path/to.tfstate"  this will be provided on runtime
+    //    key    = "path/to.tfstate"  this will be provided on runtime
   }
   required_providers {
-    aws = "~> 2.39.0"
-    null = "~> 2.1.2"
-    random = "~> 2.2.1"
+    aws      = "~> 2.39.0"
+    null     = "~> 2.1.2"
+    random   = "~> 2.2.1"
     template = "~> 2.1.2"
   }
 }
@@ -42,8 +42,8 @@ module "ecs_instances" {
   depends_id              = ""
   custom_userdata         = var.custom_userdata
   cloudwatch_prefix       = var.cloudwatch_prefix
-  target_group_arns = []
-//  target_group_arns       = module.alb.target_group_arns
+  target_group_arns       = []
+  //  target_group_arns       = module.alb.target_group_arns
 }
 
 resource "aws_ecs_cluster" "cluster" {
@@ -62,7 +62,7 @@ resource "aws_security_group_rule" "ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = module.ecs_instances.ecs_instance_security_group_id
   type              = "ingress"
 }

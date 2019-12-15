@@ -40,3 +40,8 @@ variable "password" {
   description = "DB password"
   type        = string
 }
+
+variable "allowed_security_groups_ids" {
+  description = "Security groups which will be allowed to connect to the DB."
+  type        = list(string)
+}

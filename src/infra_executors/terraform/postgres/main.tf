@@ -3,7 +3,7 @@ terraform {
   backend "s3" {
     bucket = "chiliseed-dev-terraform-states"
     region = "us-east-2"
-//    key    = "path/to.tfstate"  this will be provided on runtime
+    //    key    = "path/to.tfstate"  this will be provided on runtime
   }
   required_providers {
     aws    = "~> 2.39.0"
@@ -17,7 +17,7 @@ provider "aws" {}
 data "aws_subnet_ids" "public" {
   vpc_id = var.vpc_id
   tags = {
-    Type = "public"
+    Type = "private"
   }
 }
 

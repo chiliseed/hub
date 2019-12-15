@@ -13,17 +13,17 @@ variable "instance_group" {
 
 variable "max_size" {
   description = "Maximum size of the nodes in the cluster"
-  default = 1
+  default     = 1
 }
 
 variable "min_size" {
   description = "Minimum size of the nodes in the cluster"
-  default = 1
+  default     = 1
 }
 
 variable "desired_capacity" {
   description = "The desired capacity of the cluster"
-  default = 1
+  default     = 1
 }
 
 variable "ssh_key_name" {
@@ -32,7 +32,7 @@ variable "ssh_key_name" {
 
 variable "instance_type" {
   description = "AWS instance type to use"
-  default = "t2.micro"
+  default     = "t2.micro"
 }
 
 variable "ecs_aws_ami" {

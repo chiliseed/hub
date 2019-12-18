@@ -169,7 +169,7 @@ def destroy_ecs(creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: E
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Create/destroy db in the provides vpc."
+        description="Create/destroy ecs cluster in the provides vpc."
     )
     parser.add_argument(
         "cmd",

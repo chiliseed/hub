@@ -1,5 +1,5 @@
 """Methods that construct objects from input."""
-from typing import Mapping, NamedTuple, Optional, TYPE_CHECKING, Union
+from typing import Mapping, NamedTuple, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from infra_executors.constants import AwsCredentials, GeneralConfiguration

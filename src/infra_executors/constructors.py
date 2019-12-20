@@ -1,4 +1,6 @@
 """Methods that construct objects from input."""
+import json
+from collections import namedtuple
 from typing import Mapping, NamedTuple, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -37,7 +39,20 @@ def build_env_vars(
 
     if cmd_params:
         for key, value in cmd_params._asdict().items():
-            env_vars[f"TF_VAR_{key}"] = str(value)
+            if isinstance(value, list):
+                try:
+                    formatted_val = json.dumps([
+                        v._asdict() for v in value
+                    ])
+                except AttributeError:
+                    # this is not a named tuple
+                    formatted_val = json.dumps(value)
+            elif isinstance(value, bool):
+                formatted_val = json.dumps(value)
+            else:
+                formatted_val = str(value)
+
+            env_vars[f"TF_VAR_{key}"] = formatted_val
 
     print("env vars: ", env_vars)
     return env_vars

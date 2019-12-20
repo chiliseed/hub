@@ -1,5 +1,5 @@
 import argparse
-from typing import NamedTuple, NewType, Union, List, Literal, Optional
+from typing import NamedTuple, NewType, List, Optional
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_state_key

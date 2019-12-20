@@ -31,7 +31,7 @@ variable "deregistration_delay" {
 
 variable "ssl_certificate_arn" {
   type = string
-  default = null
+  default = ""
   description = "ARN of a related ACM certificate to use for https."
 }
 

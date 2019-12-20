@@ -51,4 +51,5 @@ resource "aws_security_group_rule" "listeners" {
   protocol          = local.tcp
   security_group_id = aws_security_group.alb.id
   type              = local.ingress
+  cidr_blocks = [local.anywhere_cidr]
 }

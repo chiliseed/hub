@@ -1,3 +1,18 @@
+terraform {
+  required_version = ">=0.12.1"
+  backend "s3" {
+    bucket = "chiliseed-dev-terraform-states"
+    region = "us-east-2"
+    //    key    = "path/to.tfstate"  this will be provided on runtime
+  }
+  required_providers {
+    aws      = "~> 2.39.0"
+    null     = "~> 2.1.2"
+    random   = "~> 2.2.1"
+    template = "~> 2.1.2"
+  }
+}
+
 data "aws_subnet_ids" "private" {
   vpc_id = var.vpc_id
   tags = {
@@ -54,7 +69,7 @@ resource "aws_alb_target_group" "this" {
 
 // create https listeners only if we have ssl arn
 resource "aws_alb_listener" "https" {
-  count = var.ssl_certificate_arn ? aws_alb_target_group.this.count : 0
+  count = var.ssl_certificate_arn == "" ? length(aws_alb_target_group.this) : 0
 
   load_balancer_arn = aws_alb.alb.id
   port              = var.open_ports[count.index].alb_port
@@ -70,7 +85,7 @@ resource "aws_alb_listener" "https" {
 
 // if we have ssl, http will redirect to https
 resource "aws_alb_listener" "http-to-https" {
-  count = var.ssl_certificate_arn ? aws_alb_target_group.this.count : 0
+  count = var.ssl_certificate_arn == "" ? length(aws_alb_target_group.this) : 0
 
   load_balancer_arn = aws_alb.alb.id
   port              = var.open_ports[count.index].alb_port
@@ -89,7 +104,7 @@ resource "aws_alb_listener" "http-to-https" {
 
 // if we don't have ssl, forward to target groups
 resource "aws_alb_listener" "http" {
-  count = var.ssl_certificate_arn ? 0 : aws_alb_target_group.this.count
+  count = var.ssl_certificate_arn == "" ? 0 : length(aws_alb_target_group.this)
 
   load_balancer_arn = aws_alb.alb.id
   port              = var.open_ports[count.index].alb_port

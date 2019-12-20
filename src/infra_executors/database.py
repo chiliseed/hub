@@ -7,7 +7,7 @@ from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
 
-logger = get_logger("db-infra-executor")
+logger = get_logger("db")
 
 
 class DBConfigs(NamedTuple):

@@ -7,4 +7,4 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format=FORMAT)
 
 def get_logger(name: str):
     """Returns configured logger."""
-    return logging.getLogger(name)
+    return logging.getLogger(f"{name}-infra-executor")

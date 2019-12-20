@@ -16,7 +16,7 @@ from infra_executors.terraform_executor import (
 )
 
 
-logger = get_logger(__name__)
+logger = get_logger("network")
 
 
 def create_network(

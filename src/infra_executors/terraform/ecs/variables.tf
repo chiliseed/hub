@@ -49,20 +49,10 @@ variable "ecs_config" {
   description = "Specify ecs configuration or get it from S3. Example: aws s3 cp s3://some-bucket/ecs.config /etc/ecs/ecs.config"
 }
 
-//variable "ecs_logging" {
-//  default     = "[\"json-file\",\"awslogs\"]"
-//  description = "Adding logging option to ECS that the Docker containers can use. It is possible to add fluentd as well"
-//}
-
 variable "cloudwatch_prefix" {
   default     = ""
   description = "If you want to avoid cloudwatch collision or you don't want to merge all logs to one log group specify a prefix"
 }
-//
-//variable "public_subnet_ids" {
-//  type = list(string)
-//  description = "List of public subnet group ids."
-//}
 
 variable "vpc_id" {
   type = string

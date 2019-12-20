@@ -28,33 +28,3 @@ variable "public_subnet_cidrs" {
 variable "availability_zones" {
   type = "list"
 }
-//
-//variable "db_identifier" {
-//  description = "A unique identifier of the db. One Postgres can have multiple databases. This is the identifier of the Postgres."
-//}
-//
-//variable "db_name" {
-//  description = "DB name"
-//}
-//
-//variable "db_username" {
-//  description = "DB username"
-//}
-//
-//variable "db_password" {
-//  description = "DB password"
-//}
-//
-//variable "db_instance_type" {
-//  default     = "db.t2.large"
-//  description = "The type of the instance to use for the db. Example: db.t2.large"
-//}
-//variable "db_allocated_storage" {
-//  default     = 5
-//  description = "The allocated storage in gigabytes."
-//}
-
-//variable "domain" {
-//  description = "Domain name. Example: example.com"
-//  type        = string
-//}

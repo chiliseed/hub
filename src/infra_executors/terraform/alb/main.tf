@@ -57,6 +57,7 @@ resource "aws_alb_target_group" "this" {
   health_check {
     path     = var.open_ports[count.index].health_check_endpoint
     protocol = var.open_ports[count.index].health_check_protocol
+    port = var.open_ports[count.index].container_port
   }
 
   tags = {

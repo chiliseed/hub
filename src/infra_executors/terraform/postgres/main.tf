@@ -14,7 +14,7 @@ terraform {
 
 provider "aws" {}
 
-data "aws_subnet_ids" "public" {
+data "aws_subnet_ids" "private" {
   vpc_id = var.vpc_id
   tags = {
     Type = "private"
@@ -72,7 +72,7 @@ module "master" {
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
 
   # DB subnet group
-  subnet_ids = data.aws_subnet_ids.public.ids
+  subnet_ids = data.aws_subnet_ids.private.ids
 
   # Snapshot name upon DB deletion
   final_snapshot_identifier = "${var.identifier}-${var.environment}-final"

@@ -161,6 +161,23 @@ class TerraformExecutor:
             logger.error("failed to execute terraform configs")
         return {}
 
+    def get_outputs(self) -> Mapping[str, str]:
+        """Get output for provided terraform configuration."""
+        try:
+            self.init_terraform()
+            get_output = self.execute_command([
+                f"terraform output"
+            ])
+            if get_output != 0:
+                logger.error(
+                    "Failed to get terraform output: %s", self.config_location
+                )
+                return {}
+            return extract_outputs(self.run_log)
+        except TerraformExecutorError:
+            logger.error("failed to execute terraform configs")
+        return {}
+
     def execute_destroy(self) -> None:
         """Run terraform destroy."""
         try:

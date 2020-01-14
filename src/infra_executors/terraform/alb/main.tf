@@ -45,19 +45,32 @@ resource "aws_alb" "alb" {
   }
 }
 
+# Generate a random string to add it to the name of the Target Group
+resource "random_string" "alb_prefix" {
+  length  = 4
+  upper   = false
+  special = false
+}
+
 resource "aws_alb_target_group" "this" {
   count = length(var.open_ports)
 
-  name                 = var.open_ports[count.index].name
+  name                 = "${var.open_ports[count.index].name}-${random_string.alb_prefix.result}"
   port                 = var.open_ports[count.index].container_port
   protocol             = "HTTP"
   vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay
 
+  lifecycle {
+    // we must create before destroy because of listeners that are connected to
+    // target groups
+    create_before_destroy = true
+  }
+
   health_check {
     path     = var.open_ports[count.index].health_check_endpoint
     protocol = var.open_ports[count.index].health_check_protocol
-    port = var.open_ports[count.index].container_port
+    port = "traffic-port"  // setting up dynamic ports
   }
 
   tags = {

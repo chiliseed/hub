@@ -1,6 +1,5 @@
 """Methods that construct objects from input."""
 import json
-from collections import namedtuple
 from typing import Mapping, NamedTuple, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:

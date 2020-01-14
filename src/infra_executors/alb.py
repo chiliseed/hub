@@ -121,7 +121,7 @@ if __name__ == "__main__":
         open_ports=[
             OpenPort(
                 name=f"{common.project_name}-api",
-                container_port=8000,
+                container_port=7878,
                 alb_port=80,
                 health_check_endpoint="/health/check/",
                 health_check_protocol=HTTP

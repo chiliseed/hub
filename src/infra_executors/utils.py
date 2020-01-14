@@ -4,6 +4,10 @@ import re
 import subprocess  # nosec
 from typing import List, Mapping, Optional
 
+import boto3
+
+from infra_executors.constants import AwsCredentials
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,3 +91,48 @@ def extract_outputs(log_file_path: str) -> Mapping[str, str]:
         key, value = clean_line.split("=")
         outputs[key.strip()] = value.strip()
     return outputs
+
+
+def get_session(region: str) -> boto3.session.Session:
+    """Return new thread-safe Session object.
+
+    Each boto3 client/resource should use it to interact with AWS services.
+
+    More info about it:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/guide/resources.html#multithreading-multiprocessing
+
+    Parameters
+    ----------
+    region : str
+        name of the aws region. Example: us-east-1
+
+    Returns
+    -------
+    boto3.session.Session
+        boto3.session.Session instance
+    """
+    session_config = {"region_name": region}
+
+    return boto3.session.Session(**session_config)
+
+
+def get_boto3_client(service_name: str, aws_creds: AwsCredentials):
+    """Initialize boto3 for the service.
+
+    Parameters
+    ----------
+    aws_creds: AwsCredentials
+        aws credentials
+    service_name: str
+        name of the service. Example: ssm, ec2, s3
+
+    Returns
+    -------
+    boto3.client
+    """
+    session = get_session(aws_creds.region)
+    return session.client(
+        service_name,
+        aws_access_key_id=aws_creds.access_key,
+        aws_secret_access_key=aws_creds.secret_key,
+    )

@@ -2,12 +2,11 @@ import argparse
 import os
 from typing import NamedTuple
 
-import boto3
-
 from infra_executors.constants import AwsCredentials, KEYS_DIR, GeneralConfiguration
 from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
+from infra_executors.utils import get_boto3_client
 
 logger = get_logger("ecs")
 
@@ -25,51 +24,6 @@ class ECSConfigs(NamedTuple):
     max_size: int = 1
     min_size: int = 1
     desired_capacity: int = 1
-
-
-def get_session(region: str) -> boto3.session.Session:
-    """Return new thread-safe Session object.
-
-    Each boto3 client/resource should use it to interact with AWS services.
-
-    More info about it:
-    https://boto3.amazonaws.com/v1/documentation/api/latest/guide/resources.html#multithreading-multiprocessing
-
-    Parameters
-    ----------
-    region : str
-        name of the aws region. Example: us-east-1
-
-    Returns
-    -------
-    boto3.session.Session
-        boto3.session.Session instance
-    """
-    session_config = {"region_name": region}
-
-    return boto3.session.Session(**session_config)
-
-
-def get_boto3_client(service_name: str, aws_creds: AwsCredentials):
-    """Initialize boto3 for the service.
-
-    Parameters
-    ----------
-    aws_creds: AwsCredentials
-        aws credentials
-    service_name: str
-        name of the service. Example: ssm, ec2, s3
-
-    Returns
-    -------
-    boto3.client
-    """
-    session = get_session(aws_creds.region)
-    return session.client(
-        service_name,
-        aws_access_key_id=aws_creds.access_key,
-        aws_secret_access_key=aws_creds.secret_key,
-    )
 
 
 def get_ecs_ami_id(aws_creds: AwsCredentials):

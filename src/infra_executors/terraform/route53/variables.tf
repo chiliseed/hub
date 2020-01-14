@@ -10,7 +10,10 @@ variable "enviroment" {
 }
 
 variable "cname_subdomains" {
-  type = string
-  default = ""
-  description = "Comma separated list of CNAME subdomains. Example: 'test,dev,staging'"
+  type = list(object({
+    subdomain = string
+    route_to = string
+  }))
+  default = []
+  description = "Comma separated list of CNAME subdomains and where to route traffic to. route_to can be load balancer dns name or cloudfront dns."
 }

@@ -13,8 +13,6 @@ terraform {
   }
 }
 
-locals {cnames = split(",", var.cname_subdomains)}
-
 resource "aws_route53_zone" "primary" {
   name    = var.domain
   comment = "Managed by Chiliseed"
@@ -25,10 +23,11 @@ resource "aws_route53_zone" "primary" {
 }
 
 resource "aws_route53_record" "subdomains" {
-  count   = length(local.cnames)
+  count   = length(var.cname_subdomains)
   allow_overwrite = true
-  name    = "${local.cnames[count.index]}.${var.domain}"
+  name    = "${var.cname_subdomains[count.index].subdomain}.${var.domain}"
   type    = "CNAME"
   ttl     = "300"
   zone_id = aws_route53_zone.primary.id
+  records = [var.cname_subdomains[count.index].route_to]
 }

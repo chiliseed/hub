@@ -1,5 +1,5 @@
 import argparse
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 from infra_executors.constants import GeneralConfiguration, AwsCredentials
 from infra_executors.constructors import build_state_key
@@ -9,9 +9,14 @@ from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfig
 logger = get_logger("r53-infra-executor")
 
 
+class CnameSubDomain(NamedTuple):
+    subdomain: str
+    route_to: str
+
+
 class Route53Configuration(NamedTuple):
     domain: str
-    cname_subdomains: str
+    cname_subdomains: List[CnameSubDomain]
 
 
 def create_route53(creds: AwsCredentials, params: GeneralConfiguration, run_config: Route53Configuration):
@@ -68,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "environment",
         type=str,
-        default="develop",
+        default="dev",
         help="The name of your environment. Example: develop",
     )
     parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
@@ -90,7 +95,7 @@ if __name__ == "__main__":
     )
     cmd_configs = Route53Configuration(
         domain="chiliseed.com",
-        cname_subdomains="demo"
+        cname_subdomains=[CnameSubDomain("demo", "demo-alb-1852262830.us-east-2.elb.amazonaws.com")]
     )
 
     if args.cmd == "create":

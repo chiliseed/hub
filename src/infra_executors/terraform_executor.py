@@ -1,4 +1,5 @@
 """Executor for terraform configurations."""
+import json
 import os
 from typing import List, Mapping, NamedTuple, Optional, TYPE_CHECKING
 
@@ -12,7 +13,7 @@ from infra_executors.constants import (
 )
 from infra_executors.constructors import build_env_vars
 from infra_executors.logger import get_logger
-from infra_executors.utils import execute_shell_command, extract_outputs
+from infra_executors.utils import execute_shell_command
 
 if TYPE_CHECKING:
     from infra_executors.constants import (
@@ -73,7 +74,7 @@ class TerraformExecutor:
             f"{executor_configs.name}_{general_configs.run_id}_{get_uuid_hex(4)}.tfplan",
         )
 
-    def execute_command(self, cmd: List[str]) -> int:
+    def execute_command(self, cmd: List[str]) -> tuple:
         """Execute terraform shell commands."""
         logger.info("Executing terraform with vars_file=%s", self.executor_configs.variables_file_name)
         return execute_shell_command(
@@ -83,7 +84,7 @@ class TerraformExecutor:
     def init_terraform(self) -> None:
         """Initialize terraform state."""
         logger.info("Initializing terraform state. state_key=%s", self.executor_configs.state_key)
-        init_return_code = self.execute_command(
+        (init_return_code, _) = self.execute_command(
             [
                 f"terraform init "
                 f'-backend-config="key={self.executor_configs.state_key}" '
@@ -121,7 +122,7 @@ class TerraformExecutor:
                     f"-out={self.plan_file}",
                 ]
 
-        plan_return_code = self.execute_command(cmd)
+        (plan_return_code, _) = self.execute_command(cmd)
 
         if plan_return_code == 0:
             logger.info("No changes to apply")
@@ -137,7 +138,7 @@ class TerraformExecutor:
     def apply_plan(self) -> Mapping[str, str]:
         """Apply the plan."""
         logger.info("Got changes to apply")
-        apply_return_code = self.execute_command(
+        (apply_return_code, _) = self.execute_command(
             [f"terraform apply -auto-approve -no-color {self.plan_file}"]
         )
         if apply_return_code != 0:
@@ -148,7 +149,13 @@ class TerraformExecutor:
             "Successfully applied a plan. run_id=%s",
             self.general_configs.run_id,
         )
-        return extract_outputs(self.run_log)
+
+        (get_outputs_return_code, stdout, _) = self._get_outputs()
+        if get_outputs_return_code != 0:
+            logger.error("Failed to get outputs of apply. run_id=%s",
+                         self.general_configs.run_id)
+            return {}
+        return json.loads(stdout)
 
     def execute_apply(self) -> Mapping[str, str]:
         """Run terraform execution."""
@@ -157,23 +164,32 @@ class TerraformExecutor:
             has_changes = self.prepare_plan()
             if has_changes:
                 return self.apply_plan()
+            return self._get_outputs()
         except TerraformExecutorError:
             logger.error("failed to execute terraform configs")
         return {}
 
     def get_outputs(self) -> Mapping[str, str]:
-        """Get output for provided terraform configuration."""
+        """Run init and then get outputs."""
         try:
             self.init_terraform()
-            get_output = self.execute_command([
-                f"terraform output"
+            return self._get_outputs()
+        except TerraformExecutorError:
+            return {}
+
+    def _get_outputs(self) -> Mapping[str, str]:
+        """Get output for provided terraform configuration."""
+        try:
+            (get_output, stdout) = self.execute_command([
+                f"terraform output -json"
             ])
             if get_output != 0:
                 logger.error(
                     "Failed to get terraform output: %s", self.config_location
                 )
                 return {}
-            return extract_outputs(self.run_log)
+
+            return json.loads(stdout)
         except TerraformExecutorError:
             logger.error("failed to execute terraform configs")
         return {}

@@ -2,7 +2,7 @@
 import logging
 import re
 import subprocess  # nosec
-from typing import List, Mapping, Optional
+from typing import List, Mapping, Optional, Tuple
 
 import boto3
 
@@ -16,7 +16,7 @@ def execute_shell_command(
     env_vars: Optional[Mapping[str, str]],
     cwd: Optional[str],
     log_to: Optional[str],
-) -> int:
+) -> Tuple:
     """Execute provided command within shell.
 
     Parameters
@@ -39,6 +39,7 @@ def execute_shell_command(
         1 - error
         -N - process was terminated by signal N
     """
+    stdout = ""
     with subprocess.Popen(
         cmd,
         shell=True,  # nosec
@@ -52,11 +53,15 @@ def execute_shell_command(
                 for line in process.stdout:
                     logfile.write(line)
                     logger.info(line.decode())
+                    stdout += line.decode()
         else:
             for line in process.stdout:
                 logger.info(line.decode())
+                stdout += line.decode()
+
         process.poll()
-    return process.returncode
+
+    return process.returncode, stdout
 
 
 def extract_outputs(log_file_path: str) -> Mapping[str, str]:

@@ -1,12 +1,11 @@
 import argparse
+from time import sleep
 from typing import Dict
 
 import botocore.exceptions
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
-from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
-from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
 from infra_executors.utils import get_boto3_client
 
 
@@ -17,6 +16,7 @@ DEMO_API_IMAGE_URI = "chiliseed/demo-api:latest"
 CONTAINER_PORT = 7878
 ALB_PORT = 80
 CONTAINER_HEALTH_CHECK_URI = "/health/check"
+SERVICE_NAME = FAMILY_NAME = f"chiliseed-{DEMO_APP}"
 
 
 class DeployError(Exception):
@@ -32,7 +32,7 @@ def put_task_definition(creds: AwsCredentials, params: GeneralConfiguration, clu
 
     client = get_boto3_client("ecs", creds)
     task_definition = client.register_task_definition(
-        family=f"chiliseed-{DEMO_APP}",
+        family=FAMILY_NAME,
         executionRoleArn=ecs_executor['Role']['Arn'],
         cpu='128',
         memory='100',
@@ -157,14 +157,13 @@ def create_listener_for_target_group(creds: AwsCredentials, alb_arn: str, target
 def launch_task_in_cluster(creds: AwsCredentials, target_group_arn: str, task_definition: Dict, cluster: str):
     """Launch service in cluster."""
     client = get_boto3_client("ecs", creds)
-    service_name = f"chiliseed-{DEMO_APP}"
     try:
-        resp = client.describe_services(cluster=cluster, services=[service_name])
+        resp = client.describe_services(cluster=cluster, services=[SERVICE_NAME])
         if resp['services']:
-            logger.info("Updating existing %s service", service_name)
+            logger.info("Updating existing %s service", SERVICE_NAME)
             client.update_service(
                 cluster=cluster,
-                service=service_name,
+                service=SERVICE_NAME,
                 taskDefinition=task_definition['taskDefinition']['taskDefinitionArn'],
                 desiredCount=1,
                 deploymentConfiguration={
@@ -175,11 +174,11 @@ def launch_task_in_cluster(creds: AwsCredentials, target_group_arn: str, task_de
             )
         return
     except botocore.exceptions.ClientError:
-        logger.info("Deploying new %s service", service_name)
+        logger.info("Deploying new %s service", SERVICE_NAME)
 
     client.create_service(
         cluster=cluster,
-        serviceName=service_name,
+        serviceName=SERVICE_NAME,
         taskDefinition=task_definition['taskDefinition']['taskDefinitionArn'],
         desiredCount=1,
         launchType='EC2',
@@ -204,6 +203,70 @@ def deploy(creds: AwsCredentials, params: GeneralConfiguration, cluster: str, ta
     task_definition = put_task_definition(creds, params, cluster)
     launch_task_in_cluster(creds, target_group_arn, task_definition, f"{cluster}-{params.env_name}")
     logger.info("Demo api deployed")
+
+
+def wait_for_service_scale(creds: AwsCredentials, cluster: str, service_name: str, desired_count: int, timeout_seconds=10):
+    client = get_boto3_client("ecs", creds)
+    waited_seconds = 0
+    while waited_seconds < timeout_seconds:
+        logger.info("Checking if service scaled to %s", desired_count)
+        resp = client.describe_services(
+            cluster=cluster,
+            services=[service_name]
+        )
+
+        if not resp['services']:
+            raise Exception("Service not found")
+        if resp['service'][0]['runningCount'] == desired_count:
+            logger.info("Services %s scaled to desired count of %d", service_name, desired_count)
+            return
+        else:
+            waited_seconds += 1
+            sleep(1)
+
+    raise Exception("Service %s scale to desired count of %d TIMED OUT", service_name, desired_count)
+
+
+def remove(creds: AwsCredentials, params: GeneralConfiguration, cluster_name: str):
+    cluster = f"{cluster_name}-{params.env_name}"
+    logger.info("Removing %s from cluster %s", DEMO_APP, cluster_name)
+    client = get_boto3_client("ecs", creds)
+
+    logger.info("Get task definitions: %s", FAMILY_NAME)
+    task_definitions = client.list_task_definitions(
+        familyPrefix=FAMILY_NAME,
+        sort="DESC",
+    )
+    if not task_definitions['taskDefinitionArns']:
+        logger.info("Found 0 task definitions for family %s", FAMILY_NAME)
+    else:
+        logger.info("Scaling down %s", SERVICE_NAME)
+        client.update_service(
+            cluster=cluster,
+            service=SERVICE_NAME,
+            taskDefinition=task_definitions['taskDefinitionArns'][0],
+            desiredCount=0,
+            deploymentConfiguration={
+                "maximumPercent": 200,
+                "minimumHealthyPercent": 100,
+            },
+            forceNewDeployment=True
+        )
+        wait_for_service_scale(creds, cluster, SERVICE_NAME, 0)
+
+    logger.info("Deleting service %s", SERVICE_NAME)
+    client.delete_service(
+        cluster=cluster,
+        service=SERVICE_NAME,
+        force=True
+    )
+
+    logger.info("Removing task definitions")
+    for task_definition in task_definitions['taskDefinitionArns']:
+        client.deregister_task_definition(taskDefinition=task_definition)
+        logger.info("Deregisted %s", task_definition)
+
+    logger.info("Demo api removed")
 
 
 if __name__ == "__main__":
@@ -261,7 +324,6 @@ if __name__ == "__main__":
     )
 
     if args.cmd == "deploy":
-        deploy(aws_creds, common, args.cluster)
-    if args.cmd == "destroy":
-        print("not implemented")
-        #destroy(aws_creds, common, args.cluster)
+        deploy(aws_creds, common, args.cluster, args.target_group)
+    if args.cmd == "remove":
+        remove(aws_creds, common, args.cluster)

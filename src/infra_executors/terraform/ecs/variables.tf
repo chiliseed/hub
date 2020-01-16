@@ -57,3 +57,8 @@ variable "cloudwatch_prefix" {
 variable "vpc_id" {
   type = string
 }
+
+variable "alb_security_group_id" {
+  type = string
+  default = ""
+}

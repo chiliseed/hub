@@ -42,8 +42,7 @@ module "ecs_instances" {
   depends_id              = ""
   custom_userdata         = var.custom_userdata
   cloudwatch_prefix       = var.cloudwatch_prefix
-  target_group_arns       = []
-  //  target_group_arns       = module.alb.target_group_arns
+  target_group_arns       = []  # this will be provided via ecs service registration
 }
 
 resource "aws_ecs_cluster" "cluster" {
@@ -67,4 +66,13 @@ resource "aws_security_group_rule" "ssh" {
   type              = "ingress"
 }
 
-# todo see how and where to add ecr repositories
+resource "aws_security_group_rule" "alb_to_ecs" {
+  count = var.alb_security_group_id == "" ? 0 : 1
+
+  type                     = "ingress"
+  from_port                = 32768
+  to_port                  = 65535
+  protocol                 = "TCP"
+  source_security_group_id = var.alb_security_group_id
+  security_group_id        = module.ecs_instances.ecs_instance_security_group_id
+}

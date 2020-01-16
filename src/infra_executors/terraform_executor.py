@@ -150,12 +150,7 @@ class TerraformExecutor:
             self.general_configs.run_id,
         )
 
-        (get_outputs_return_code, stdout, _) = self._get_outputs()
-        if get_outputs_return_code != 0:
-            logger.error("Failed to get outputs of apply. run_id=%s",
-                         self.general_configs.run_id)
-            return {}
-        return json.loads(stdout)
+        return self._get_outputs()
 
     def execute_apply(self) -> Mapping[str, str]:
         """Run terraform execution."""

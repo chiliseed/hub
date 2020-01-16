@@ -1,6 +1,8 @@
 import argparse
 from typing import Dict
 
+import botocore.exceptions
+
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
@@ -21,39 +23,24 @@ class DeployError(Exception):
     """Exceptions thrown by put task definition."""
 
 
-def put_task_definition(creds: AwsCredentials, params: GeneralConfiguration) -> Dict:
+def put_task_definition(creds: AwsCredentials, params: GeneralConfiguration, cluster: str) -> Dict:
     """Pushes task definition for Chiliseed demo api."""
-    logger.info("Getting cluster details. project=%s env=%s", params.project_name, params.env_name)
-    executor = TerraformExecutor(
-        creds=creds,
-        general_configs=params,
-        cmd_configs=None,
-        executor_configs=ExecutorConfiguration(
-            name="ecs",
-            action="output",
-            config_dir="ecs",
-            state_key=build_state_key(params, 'ecs'),
-            variables_file_name=""
-        )
-    )
-    outputs = executor.get_outputs()
-    if not outputs:
-        raise DeployError("Failed to get ecs outputs")
-
+    logger.info("Getting ecs executor role. project=%s env=%s", params.project_name, params.env_name)
+    iam_client = get_boto3_client("iam", creds)
+    ecs_executor = iam_client.get_role(RoleName=f"{params.env_name}_{cluster}_ecs_task_executor")
     logger.info("Put ECS task definition for: %s", DEMO_APP)
 
     client = get_boto3_client("ecs", creds)
     task_definition = client.register_task_definition(
         family=f"chiliseed-{DEMO_APP}",
-        executionRoleArn=outputs['ecs_executor_role_arn'],
-        cpu='100',
-        memory='128m',
+        executionRoleArn=ecs_executor['Role']['Arn'],
+        cpu='128',
+        memory='100',
         containerDefinitions=[{
             "name": DEMO_APP,
             "image": DEMO_API_IMAGE_URI,
             "portMappings": [{
-                'containerPort': 7878,
-                'hostPort': 0,  # host port will be assigned dynamically
+                'containerPort': CONTAINER_PORT,
                 'protocol': 'tcp'
             }],
             "essential": True,
@@ -61,10 +48,11 @@ def put_task_definition(creds: AwsCredentials, params: GeneralConfiguration) -> 
                 "logDriver": "awslogs",
                 "options": {
                     "awslogs-group": "chiliseed-demo-api",
+                    "awslogs-create-group": "true",
                     "awslogs-region": creds.region,
                     "awslogs-stream-prefix": "demo-api",
                 }
-            }
+            },
         }],
         tags=[
             {"key": "Environment", "value": params.env_name},
@@ -72,17 +60,18 @@ def put_task_definition(creds: AwsCredentials, params: GeneralConfiguration) -> 
         ]
     )
 
-    logger.info("Success putting ECS task definition: %s", task_definition['task_definition']['taskDefinitionArn'])
+    logger.info("Success putting ECS task definition: %s", task_definition['taskDefinition']['taskDefinitionArn'])
     return task_definition
 
 
 def create_target_group(creds: AwsCredentials, name: str, container_port: int, vpc_id: str, health_check_uri: str) -> Dict:
     """Create target group to route traffic to container."""
-    client = get_boto3_client("ecs", creds)
-    resp = client.describe_target_groups(Names=[name])
-    if resp['TargetGroups']:
-        logger.info("Found existing target group: %s", name)
+    client = get_boto3_client("elbv2", creds)
+    try:
+        resp = client.describe_target_groups(Names=[name])
         return resp['TargetGroups'][0]
+    except botocore.exceptions.ClientError:
+        logger.info("Target group not found")
 
     logger.info("Creating target group for: %s", name)
 
@@ -99,62 +88,99 @@ def create_target_group(creds: AwsCredentials, name: str, container_port: int, v
         HealthyThresholdCount=5,
         UnhealthyThresholdCount=2,
         Matcher={
-            "HttpCode": 200,
-            "TargetType": "instance",
-        }
-    )
+            "HttpCode": "200",
+        },
+        TargetType="instance",
+    )['TargetGroups'][0]
 
 
-def create_listener_for_target_group(creds: AwsCredentials, alb_port: int, alb_arn: str, target_group_arn: str) -> Dict:
+def create_listener_for_target_group(creds: AwsCredentials, alb_arn: str, target_group_arn: str, acm_arn: str) -> Dict:
     """Create listener that forwards traffic to target group."""
-    logger.info("Creating listener on alb %s for target group %s", alb_arn, target_group_arn)
-    client = get_boto3_client("ecs", creds)
-    return client.create_listener(
-        LoadBalancerArn=alb_arn,
-        Protocol='HTTP',
-        Port=alb_port,
-        DefaultActions=[{
-            "Type": "forward",
-            "TargetGroupArn": target_group_arn,
-        }]
-    )
-
-
-def launch_task_in_cluster(creds: AwsCredentials, params: GeneralConfiguration, task_definition: Dict, cluster: str):
-    """Launch service in cluster."""
-    target_group = create_target_group(
-        creds,
-        "demo-api",
-        container_port=CONTAINER_PORT,
-        vpc_id=params.vpc_id,
-        health_check_uri=CONTAINER_HEALTH_CHECK_URI
-    )
-    # get alb
-    executor = TerraformExecutor(
-        creds=creds,
-        general_configs=params,
-        cmd_configs=None,
-        executor_configs=ExecutorConfiguration(
-            name="alb",
-            action="output",
-            config_dir="alb",
-            state_key=build_state_key(params, 'alb'),
-            variables_file_name=""
+    client = get_boto3_client("elbv2", creds)
+    https = None
+    http = None
+    try:
+        logger.info("Checking for existing listeners")
+        resp = client.describe_listeners(
+            LoadBalancerArn=alb_arn
         )
-    )
-    outputs = executor.get_outputs()
-    if not outputs:
-        raise DeployError("Failed to get ecs outputs")
+        for listener in resp['Listeners']:
+            actions = [a for a in listener['DefaultActions'] if lambda o: o['TargetGroupArn'] == target_group_arn]
+            if len(actions) > 0:
+                if listener['Protocol'] == 'HTTP':
+                    logger.info("Found listener for http")
+                    http = listener
+                elif listener['Protocol'] == 'HTTPS':
+                    logger.info("Found listener for https")
+                    https = listener
+                else:
+                    logger.warning("None http listener found: %s", listener['Protocol'])
+    except botocore.exceptions.ClientError:
+        logger.info("Listener not found")
 
-    create_listener_for_target_group(
-        creds, ALB_PORT, outputs['alb_arn'], target_group['TargetGroupArn']
-    )
+    if not http:
+        logger.info("Creating http listener on alb %s for target group %s", alb_arn, target_group_arn)
+        client.create_listener(
+            LoadBalancerArn=alb_arn,
+            Protocol='HTTP',
+            Port="80",
+            DefaultActions=[{
+                "Type": "redirect",
+                "RedirectConfig": {
+                    "Protocol": "HTTPS",
+                    "Port": "#{port}",
+                    "Host": "#{host}",
+                    "Path": "/#{path}",
+                    "Query": "#{query}",
+                    "StatusCode": "HTTP_301",
+                }
+            }]
+        )
+    if not https:
+        logger.info("Creating https listener on alb %s for target group %s", alb_arn, target_group_arn)
+        https = client.create_listener(
+            LoadBalancerArn=alb_arn,
+            Protocol='HTTPS',
+            Port=443,
+            Certificates=[{
+                "CertificateArn": acm_arn,
+            }],
+            DefaultActions=[{
+                "Type": "forward",
+                "TargetGroupArn": target_group_arn,
+            }]
+        )
 
+    return https
+
+
+def launch_task_in_cluster(creds: AwsCredentials, target_group_arn: str, task_definition: Dict, cluster: str):
+    """Launch service in cluster."""
     client = get_boto3_client("ecs", creds)
+    service_name = f"chiliseed-{DEMO_APP}"
+    try:
+        resp = client.describe_services(cluster=cluster, services=[service_name])
+        if resp['services']:
+            logger.info("Updating existing %s service", service_name)
+            client.update_service(
+                cluster=cluster,
+                service=service_name,
+                taskDefinition=task_definition['taskDefinition']['taskDefinitionArn'],
+                desiredCount=1,
+                deploymentConfiguration={
+                    "maximumPercent": 200,
+                    "minimumHealthyPercent": 100,
+                },
+                forceNewDeployment=True
+            )
+        return
+    except botocore.exceptions.ClientError:
+        logger.info("Deploying new %s service", service_name)
+
     client.create_service(
         cluster=cluster,
-        serviceName="chiliseed-demo-api",
-        taskDefinition=task_definition['task_definition']['taskDefinitionArn'],
+        serviceName=service_name,
+        taskDefinition=task_definition['taskDefinition']['taskDefinitionArn'],
         desiredCount=1,
         launchType='EC2',
         schedulingStrategy="REPLICA",
@@ -165,16 +191,19 @@ def launch_task_in_cluster(creds: AwsCredentials, params: GeneralConfiguration, 
             "maximumPercent": 200,
             "minimumHealthyPercent": 100,
         },
-        loadBalancers={
-            "targetGroupArn": target_group['TargetGroupArn']
-        }
+        loadBalancers=[{
+            "targetGroupArn": target_group_arn,
+            "containerName": DEMO_APP,
+            "containerPort": CONTAINER_PORT,
+        }]
     )
 
 
-def deploy(creds: AwsCredentials, params: GeneralConfiguration, cluster: str):
+def deploy(creds: AwsCredentials, params: GeneralConfiguration, cluster: str, target_group_arn: str):
     logger.info("Deploying demo api to cluster: %s", cluster)
-    task_definition = put_task_definition(creds, params)
-    launch_task_in_cluster(creds, params, task_definition, cluster)
+    task_definition = put_task_definition(creds, params, cluster)
+    launch_task_in_cluster(creds, target_group_arn, task_definition, f"{cluster}-{params.env_name}")
+    logger.info("Demo api deployed")
 
 
 if __name__ == "__main__":
@@ -208,6 +237,11 @@ if __name__ == "__main__":
         type=str,
         help="Name of ECS cluster to deploy to",
     )
+    parser.add_argument(
+        "target_group",
+        type=str,
+        help="Load balancer target group arn via which the service will be served",
+    )
     parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
     parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")
     parser.add_argument(
@@ -229,4 +263,5 @@ if __name__ == "__main__":
     if args.cmd == "deploy":
         deploy(aws_creds, common, args.cluster)
     if args.cmd == "destroy":
-        destroy_ecs(aws_creds, common, cmd_configs)
+        print("not implemented")
+        #destroy(aws_creds, common, args.cluster)

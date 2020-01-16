@@ -21,7 +21,8 @@ HTTPS = Protocol("HTTPS")
 class OpenPort(NamedTuple):
     name: str
     container_port: int
-    alb_port: int
+    alb_port_http: int
+    alb_port_https: int
     health_check_endpoint: str
     health_check_protocol: Protocol
 
@@ -117,15 +118,16 @@ if __name__ == "__main__":
     )
     cmd_configs = ALBConfigs(
         alb_name=f"{common.project_name}-alb",
-        ssl_certificate_arn=None,
+        ssl_certificate_arn="arn:aws:acm:us-east-2:576465297898:certificate/cc99d5a3-ad29-419d-a23c-5d1c3cfd094a",
         open_ports=[
             OpenPort(
                 name=f"{common.project_name}-api",
                 container_port=7878,
-                alb_port=80,
-                health_check_endpoint="/health/check/",
+                alb_port_https=443,
+                alb_port_http=80,
+                health_check_endpoint="/health/check",
                 health_check_protocol=HTTP
-            )
+            ),
         ]
     )
 

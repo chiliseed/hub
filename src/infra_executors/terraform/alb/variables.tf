@@ -43,7 +43,8 @@ variable "open_ports" {
   type = list(object({
     name = string
     container_port = number
-    alb_port = number
+    alb_port_https = number
+    alb_port_http = number
     health_check_endpoint = string
     health_check_protocol = string
   }))

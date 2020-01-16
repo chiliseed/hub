@@ -24,6 +24,7 @@ class ECSConfigs(NamedTuple):
     max_size: int = 1
     min_size: int = 1
     desired_capacity: int = 1
+    alb_security_group_id: str = ""
 
 
 def get_ecs_ami_id(aws_creds: AwsCredentials):
@@ -164,14 +165,23 @@ if __name__ == "__main__":
     common = GeneralConfiguration(
         args.project_name, args.environment, args.run_id, args.vpc_id
     )
+    # first run
+    # cmd_configs = ECSConfigs(
+    #     cluster="demo",
+    #     instance_group_name="demo",
+    #     cloudwatch_prefix="demo",
+    #     ssh_key_name="demo_dev",
+    #     ecs_aws_ami="ami-0fbd313043845c4f2",
+    # )
+    # second run
     cmd_configs = ECSConfigs(
         cluster="demo",
         instance_group_name="demo",
         cloudwatch_prefix="demo",
         ssh_key_name="demo_dev",
         ecs_aws_ami="ami-0fbd313043845c4f2",
+        alb_security_group_id="sg-0fae2c8481099c8e8"
     )
-
     if args.cmd == "create":
         create_ecs_cluster(aws_creds, common, cmd_configs)
     if args.cmd == "destroy":

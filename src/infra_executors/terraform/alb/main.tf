@@ -83,10 +83,10 @@ resource "aws_alb_target_group" "this" {
 
 // create https listeners only if we have ssl arn
 resource "aws_alb_listener" "https" {
-  count = var.ssl_certificate_arn == "" ? length(aws_alb_target_group.this) : 0
+  count = var.ssl_certificate_arn == "" ? 0 : length(aws_alb_target_group.this)
 
   load_balancer_arn = aws_alb.alb.id
-  port              = var.open_ports[count.index].alb_port
+  port              = var.open_ports[count.index].alb_port_https
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
   certificate_arn   = var.ssl_certificate_arn
@@ -99,10 +99,10 @@ resource "aws_alb_listener" "https" {
 
 // if we have ssl, http will redirect to https
 resource "aws_alb_listener" "http-to-https" {
-  count = var.ssl_certificate_arn == "" ? length(aws_alb_target_group.this) : 0
+  count = var.ssl_certificate_arn == "" ? 0 : length(aws_alb_target_group.this)
 
   load_balancer_arn = aws_alb.alb.id
-  port              = var.open_ports[count.index].alb_port
+  port              = var.open_ports[count.index].alb_port_http
   protocol          = "HTTP"
 
   default_action {
@@ -118,10 +118,10 @@ resource "aws_alb_listener" "http-to-https" {
 
 // if we don't have ssl, forward to target groups
 resource "aws_alb_listener" "http" {
-  count = var.ssl_certificate_arn == "" ? 0 : length(aws_alb_target_group.this)
+  count = var.ssl_certificate_arn == "" ? length(aws_alb_target_group.this) : 0
 
   load_balancer_arn = aws_alb.alb.id
-  port              = var.open_ports[count.index].alb_port
+  port              = var.open_ports[count.index].alb_port_http
   protocol = "HTTP"
 
   default_action {

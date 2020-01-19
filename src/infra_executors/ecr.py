@@ -1,19 +1,27 @@
+"""Manages ecr repos."""
 import argparse
-from typing import NamedTuple, List
+from typing import Any, List, NamedTuple
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
-from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
+from infra_executors.terraform_executor import (
+    ExecutorConfiguration,
+    TerraformExecutor,
+)
 
 logger = get_logger("ecr")
 
 
 class ECRConfigs(NamedTuple):
-    repositories: List[str]
-    
+    """List of repositories to create."""
 
-def create_ecr(creds: AwsCredentials, params: GeneralConfiguration, ecr_conf: ECRConfigs):
+    repositories: List[str]
+
+
+def create_ecr(
+    creds: AwsCredentials, params: GeneralConfiguration, ecr_conf: ECRConfigs
+) -> Any:
     """Create and manage alb."""
     logger.info("Executing run_id=%s", params.run_id)
     executor = TerraformExecutor(
@@ -24,14 +32,16 @@ def create_ecr(creds: AwsCredentials, params: GeneralConfiguration, ecr_conf: EC
             name="ecr",
             action="create",
             config_dir="ecr",
-            state_key=build_state_key(params, 'ecr'),
-            variables_file_name=""
-        )
+            state_key=build_state_key(params, "ecr"),
+            variables_file_name="",
+        ),
     )
     return executor.execute_apply()
 
 
-def destroy_ecr(creds: AwsCredentials, params: GeneralConfiguration, ecr_conf: ECRConfigs):
+def destroy_ecr(
+    creds: AwsCredentials, params: GeneralConfiguration, ecr_conf: ECRConfigs
+) -> Any:
     """Destroy alb."""
     logger.info("Executing run_id=%s", params.run_id)
     executor = TerraformExecutor(
@@ -42,9 +52,9 @@ def destroy_ecr(creds: AwsCredentials, params: GeneralConfiguration, ecr_conf: E
             name="ecr",
             action="destroy",
             config_dir="ecr",
-            state_key=build_state_key(params, 'ecr'),
-            variables_file_name=""
-        )
+            state_key=build_state_key(params, "ecr"),
+            variables_file_name="",
+        ),
     )
     return executor.execute_destroy()
 
@@ -75,9 +85,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--aws-region", type=str, default="us-east-2", dest="aws_region"
     )
-    parser.add_argument(
-        "--run-id", type=str, default=1, dest="run_id"
-    )
+    parser.add_argument("--run-id", type=str, default=1, dest="run_id")
 
     args = parser.parse_args()
 
@@ -87,9 +95,7 @@ if __name__ == "__main__":
     common = GeneralConfiguration(
         args.project_name, args.environment, args.run_id, ""
     )
-    cmd_configs = ECRConfigs(
-        repositories=["demo/api"]
-    )
+    cmd_configs = ECRConfigs(repositories=["demo/api"])
 
     if args.cmd == "create":
         create_ecr(aws_creds, common, cmd_configs)

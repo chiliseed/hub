@@ -1,17 +1,27 @@
+"""Manages ecs cluster."""
 import argparse
 import os
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
-from infra_executors.constants import AwsCredentials, KEYS_DIR, GeneralConfiguration
+from infra_executors.constants import (
+    AwsCredentials,
+    GeneralConfiguration,
+    KEYS_DIR,
+)
 from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
-from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
+from infra_executors.terraform_executor import (
+    ExecutorConfiguration,
+    TerraformExecutor,
+)
 from infra_executors.utils import get_boto3_client
 
 logger = get_logger("ecs")
 
 
 class ECSConfigs(NamedTuple):
+    """Configures ecs cluster."""
+
     cluster: str
     instance_group_name: str
     cloudwatch_prefix: str
@@ -27,7 +37,7 @@ class ECSConfigs(NamedTuple):
     alb_security_group_id: str = ""
 
 
-def get_ecs_ami_id(aws_creds: AwsCredentials):
+def get_ecs_ami_id(aws_creds: AwsCredentials) -> str:
     """Retrieve the id of the official aws ecs optimized image for the region.
 
     Parameters
@@ -40,11 +50,12 @@ def get_ecs_ami_id(aws_creds: AwsCredentials):
     str:
         aws ecs optimized ami id
     """
-    ssm_client = get_boto3_client('ssm', aws_creds)
+    ssm_client = get_boto3_client("ssm", aws_creds)
     param = ssm_client.get_parameter(
-        Name="/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id",
+        Name="/aws/service/ecs/optimized-ami/"
+        "amazon-linux-2/recommended/image_id",
     )
-    return param['Parameter']['Value']
+    return str(param["Parameter"]["Value"])
 
 
 def create_ssh_key(name: str, aws_creds: AwsCredentials) -> str:
@@ -62,20 +73,24 @@ def create_ssh_key(name: str, aws_creds: AwsCredentials) -> str:
     str
         local path to pem key
     """
-    ec2_client = get_boto3_client('ec2', aws_creds)
+    ec2_client = get_boto3_client("ec2", aws_creds)
     key_pair = ec2_client.create_key_pair(KeyName=name)
 
-    with open(os.path.join(KEYS_DIR, f"{key_pair['KeyName']}_fingerprint.txt"), 'w') as fingerprint_file:
-        fingerprint_file.write(key_pair['KeyFingerprint'])
+    with open(
+        os.path.join(KEYS_DIR, f"{key_pair['KeyName']}_fingerprint.txt"), "w"
+    ) as fingerprint_file:
+        fingerprint_file.write(key_pair["KeyFingerprint"])
 
     key_pair_path = os.path.join(KEYS_DIR, f"{key_pair['KeyName']}.pem")
-    with open(key_pair_path, 'w') as key_file:
-        key_file.write(key_pair['KeyMaterial'])
+    with open(key_pair_path, "w") as key_file:
+        key_file.write(key_pair["KeyMaterial"])
 
     return key_pair_path
 
 
-def create_ecs_cluster(creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: ECSConfigs):
+def create_ecs_cluster(
+    creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: ECSConfigs
+) -> Any:
     """Create ecs cluster with asg."""
     logger.info("Executing run_id=%s", params.run_id)
     if not ecs_conf.ssh_key_name:
@@ -97,14 +112,16 @@ def create_ecs_cluster(creds: AwsCredentials, params: GeneralConfiguration, ecs_
             name="ecs",
             action="create",
             config_dir="ecs",
-            state_key=build_state_key(params, 'ecs'),
-            variables_file_name=""
-        )
+            state_key=build_state_key(params, "ecs"),
+            variables_file_name="",
+        ),
     )
     return executor.execute_apply()
 
 
-def destroy_ecs(creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: ECSConfigs):
+def destroy_ecs(
+    creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: ECSConfigs
+) -> Any:
     """Destroy ecs cluster and its resources."""
     logger.info("Executing run_id=%s", params.run_id)
     executor = TerraformExecutor(
@@ -115,9 +132,9 @@ def destroy_ecs(creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: E
             name="ecs",
             action="destroy",
             config_dir="ecs",
-            state_key=build_state_key(params, 'ecs'),
-            variables_file_name=""
-        )
+            state_key=build_state_key(params, "ecs"),
+            variables_file_name="",
+        ),
     )
     return executor.execute_destroy()
 
@@ -153,9 +170,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--aws-region", type=str, default="us-east-2", dest="aws_region"
     )
-    parser.add_argument(
-        "--run-id", type=str, default=1, dest="run_id"
-    )
+    parser.add_argument("--run-id", type=str, default=1, dest="run_id")
 
     args = parser.parse_args()
 
@@ -180,7 +195,7 @@ if __name__ == "__main__":
         cloudwatch_prefix="demo",
         ssh_key_name="demo_dev",
         ecs_aws_ami="ami-0fbd313043845c4f2",
-        alb_security_group_id="sg-0fae2c8481099c8e8"
+        alb_security_group_id="sg-0fae2c8481099c8e8",
     )
     if args.cmd == "create":
         create_ecs_cluster(aws_creds, common, cmd_configs)

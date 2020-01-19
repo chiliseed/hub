@@ -1,10 +1,14 @@
+"""Manages ALB component."""
 import argparse
-from typing import NamedTuple, NewType, List, Optional
+from typing import Any, List, NamedTuple, NewType, Optional
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
-from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
+from infra_executors.terraform_executor import (
+    ExecutorConfiguration,
+    TerraformExecutor,
+)
 
 logger = get_logger("alb")
 
@@ -19,6 +23,8 @@ HTTPS = Protocol("HTTPS")
 
 
 class OpenPort(NamedTuple):
+    """Describes open ports configuration."""
+
     name: str
     container_port: int
     alb_port_http: int
@@ -28,6 +34,8 @@ class OpenPort(NamedTuple):
 
 
 class ALBConfigs(NamedTuple):
+    """Configures alb."""
+
     alb_name: str
     ssl_certificate_arn: Optional[str]
     open_ports: List[OpenPort]
@@ -37,7 +45,9 @@ class ALBConfigs(NamedTuple):
     deregistration_delay: int = 300  # in seconds
 
 
-def create_alb(creds: AwsCredentials, params: GeneralConfiguration, alb_conf: ALBConfigs):
+def create_alb(
+    creds: AwsCredentials, params: GeneralConfiguration, alb_conf: ALBConfigs
+) -> Any:
     """Create and manage alb."""
     logger.info("Executing run_id=%s", params.run_id)
     executor = TerraformExecutor(
@@ -48,14 +58,16 @@ def create_alb(creds: AwsCredentials, params: GeneralConfiguration, alb_conf: AL
             name="alb",
             action="create",
             config_dir="alb",
-            state_key=build_state_key(params, 'alb'),
-            variables_file_name=""
-        )
+            state_key=build_state_key(params, "alb"),
+            variables_file_name="",
+        ),
     )
     return executor.execute_apply()
 
 
-def destroy_alb(creds: AwsCredentials, params: GeneralConfiguration, alb_conf: ALBConfigs):
+def destroy_alb(
+    creds: AwsCredentials, params: GeneralConfiguration, alb_conf: ALBConfigs
+) -> Any:
     """Destroy alb."""
     logger.info("Executing run_id=%s", params.run_id)
     executor = TerraformExecutor(
@@ -66,9 +78,9 @@ def destroy_alb(creds: AwsCredentials, params: GeneralConfiguration, alb_conf: A
             name="alb",
             action="destroy",
             config_dir="alb",
-            state_key=build_state_key(params, 'alb'),
-            variables_file_name=""
-        )
+            state_key=build_state_key(params, "alb"),
+            variables_file_name="",
+        ),
     )
     return executor.execute_destroy()
 
@@ -104,9 +116,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--aws-region", type=str, default="us-east-2", dest="aws_region"
     )
-    parser.add_argument(
-        "--run-id", type=str, default=1, dest="run_id"
-    )
+    parser.add_argument("--run-id", type=str, default=1, dest="run_id")
 
     args = parser.parse_args()
 
@@ -118,7 +128,7 @@ if __name__ == "__main__":
     )
     cmd_configs = ALBConfigs(
         alb_name=f"{common.project_name}-alb",
-        ssl_certificate_arn="arn:aws:acm:us-east-2:576465297898:certificate/cc99d5a3-ad29-419d-a23c-5d1c3cfd094a",
+        ssl_certificate_arn="arn:aws:acm:us-east-2:576465297898:certificate/cc99d5a3-ad29-419d-a23c-5d1c3cfd094a",  # noqa: E501
         open_ports=[
             OpenPort(
                 name=f"{common.project_name}-api",
@@ -126,9 +136,9 @@ if __name__ == "__main__":
                 alb_port_https=443,
                 alb_port_http=80,
                 health_check_endpoint="/health/check",
-                health_check_protocol=HTTP
+                health_check_protocol=HTTP,
             ),
-        ]
+        ],
     )
 
     if args.cmd == "create":

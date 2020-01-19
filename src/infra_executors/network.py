@@ -1,6 +1,6 @@
 """Creates the vpc and it's network."""
 import argparse
-from typing import Mapping
+from typing import Any
 
 from common.crypto import get_uuid_hex
 
@@ -21,7 +21,7 @@ logger = get_logger("network")
 
 def create_network(
     creds: AwsCredentials, params: GeneralConfiguration,
-) -> Mapping[str, str]:
+) -> Any:
     """Create vpc with private and subnet network, with internet access."""
     executor = TerraformExecutor(
         creds,

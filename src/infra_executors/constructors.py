@@ -1,15 +1,17 @@
 """Methods that construct objects from input."""
 import json
-from typing import Mapping, NamedTuple, Optional, TYPE_CHECKING
+from typing import Mapping, NamedTuple, Optional, TYPE_CHECKING, Type
+
 
 if TYPE_CHECKING:
+    from common.typing import NamedTupleProtocol
     from infra_executors.constants import AwsCredentials, GeneralConfiguration
 
 
 def build_env_vars(
     aws_credentials: "AwsCredentials",
     generic_configs: "GeneralConfiguration",
-    cmd_params: Optional[NamedTuple],
+    cmd_params: Optional[Type["NamedTupleProtocol"]],
 ) -> Mapping[str, str]:
     """Construct environment variables for terraform.
 

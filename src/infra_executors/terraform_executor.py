@@ -1,7 +1,7 @@
 """Executor for terraform configurations."""
 import json
 import os
-from typing import List, Mapping, NamedTuple, Optional, TYPE_CHECKING
+from typing import List, Mapping, NamedTuple, Optional, TYPE_CHECKING, Tuple, Any
 
 from common.crypto import get_uuid_hex
 
@@ -47,14 +47,14 @@ class TerraformExecutor:
     env_vars: Mapping[str, str]
     plan_file: str
     general_configs: "GeneralConfiguration"
-    cmd_configs: Optional[NamedTuple]
+    cmd_configs: Optional[Any]
     executor_configs: ExecutorConfiguration
 
     def __init__(
         self,
         creds: "AwsCredentials",
         general_configs: "GeneralConfiguration",
-        cmd_configs: Optional[NamedTuple],
+        cmd_configs: Optional[Any],
         executor_configs: ExecutorConfiguration,
     ):
 
@@ -74,7 +74,7 @@ class TerraformExecutor:
             f"{executor_configs.name}_{general_configs.run_id}_{get_uuid_hex(4)}.tfplan",
         )
 
-    def execute_command(self, cmd: List[str]) -> tuple:
+    def execute_command(self, cmd: List[str]) -> Tuple[int, str]:
         """Execute terraform shell commands."""
         logger.info("Executing terraform with vars_file=%s", self.executor_configs.variables_file_name)
         return execute_shell_command(
@@ -135,7 +135,7 @@ class TerraformExecutor:
             return False
         return True
 
-    def apply_plan(self) -> Mapping[str, str]:
+    def apply_plan(self) -> Any:
         """Apply the plan."""
         logger.info("Got changes to apply")
         (apply_return_code, _) = self.execute_command(
@@ -152,7 +152,7 @@ class TerraformExecutor:
 
         return self._get_outputs()
 
-    def execute_apply(self) -> Mapping[str, str]:
+    def execute_apply(self) -> Any:
         """Run terraform execution."""
         try:
             self.init_terraform()
@@ -164,7 +164,7 @@ class TerraformExecutor:
             logger.error("failed to execute terraform configs")
         return {}
 
-    def get_outputs(self) -> Mapping[str, str]:
+    def get_outputs(self) -> Any:
         """Run init and then get outputs."""
         try:
             self.init_terraform()
@@ -172,7 +172,7 @@ class TerraformExecutor:
         except TerraformExecutorError:
             return {}
 
-    def _get_outputs(self) -> Mapping[str, str]:
+    def _get_outputs(self) -> Any:
         """Get output for provided terraform configuration."""
         try:
             (get_output, stdout) = self.execute_command([
@@ -183,7 +183,6 @@ class TerraformExecutor:
                     "Failed to get terraform output: %s", self.config_location
                 )
                 return {}
-
             return json.loads(stdout)
         except TerraformExecutorError:
             logger.error("failed to execute terraform configs")

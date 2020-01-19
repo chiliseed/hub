@@ -1,18 +1,69 @@
+import os
 import subprocess
 import time
+from typing import Optional, Mapping, Tuple
 
 import click
 
 
-def exec_shell_command(cmd):
-    """Execute shell command.
+DOCKER_COMPOSE = "docker-compose"
+HERE = os.path.abspath(os.path.dirname(__file__))
+PROJECT_ROOT = os.path.join(HERE, "..")
+DOCKER_FILE = os.path.join(PROJECT_ROOT, "docker-compose.yml")
+PROJECT_DOCKER_COMPOSE = f"{DOCKER_COMPOSE}"
+
+
+def exec_shell_command(
+    cmd: str,
+    env_vars: Optional[Mapping[str, str]] = None,
+    cwd: Optional[str] = None,
+    log_to: Optional[str] = None,
+) -> Tuple:
+    """Execute provided command within shell.
 
     Parameters
     ----------
-    cmd : str
-        full shell command as a string
+    cmd : list
+        a list of command and it's arguments and options.
+        Example: ['ls', '-la']
+    env_vars : dict
+        a dictionary of key=value that will be injected as subprocess
+        environment variables
+    cwd : str
+        current working directory
+    log_to : str
+        file to which all logs will be written to
+
+    Returns
+    -------
+    process return code : int
+        0 - success
+        1 - error
+        -N - process was terminated by signal N
     """
-    return subprocess.run(cmd, shell=True).returncode
+    stdout = ""
+    with subprocess.Popen(
+        cmd,
+        shell=True,  # nosec
+        env=env_vars,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    ) as process:
+        if log_to:
+            with open(log_to, "ab") as logfile:
+                for line in process.stdout:
+                    logfile.write(line)
+                    click.echo(line.decode())
+                    stdout += line.decode()
+        else:
+            for line in process.stdout:
+                click.echo(line.decode())
+                stdout += line.decode()
+
+        process.poll()
+
+    return process.returncode, stdout
 
 
 def do_commands(commands):
@@ -29,10 +80,12 @@ def do_commands(commands):
     """
     start_time = time.time()
     for cmd in commands:
-        return_code = exec_shell_command(cmd)
+        click.echo(cmd)
+        (return_code, stdout) = exec_shell_command(cmd, cwd=PROJECT_ROOT)
         click.echo("Time elapsed: {}".format(time.time() - start_time))
-        if return_code != 0:
-            return
+        if return_code != 0 and stdout:
+            return return_code
+    return 0
 
 
 @click.group()
@@ -48,8 +101,8 @@ def start():
         'docker ps -q --filter "name=chiliseed_api" '
         '| grep -q . && docker stop chiliseed_api '
         '&& docker rm -fv chiliseed_api',
-        'docker-compose build',
-        'docker-compose up -d --remove-orphans',
+        f'{PROJECT_DOCKER_COMPOSE} build',
+        f'{PROJECT_DOCKER_COMPOSE} up -d --remove-orphans',
     )
 
     do_commands(commands)
@@ -60,8 +113,8 @@ def restart():
     """Restart api container, without build and with recreate container."""
     click.echo('Restarting api')
     do_commands((
-        "docker-compose stop api",
-        'docker-compose up -d --force-recreate api api',
+        f"{PROJECT_DOCKER_COMPOSE} stop api",
+        f'{PROJECT_DOCKER_COMPOSE} up -d --force-recreate api api',
     ))
 
 
@@ -70,9 +123,9 @@ def rebuild():
     """Execute api container restart with rebuild."""
     click.echo("Restarting and rebuilding api")
     do_commands((
-        "docker-compose stop api",
-        "docker-compose build api",
-        "docker-compose up -d --force-recreate api",
+        f"{PROJECT_DOCKER_COMPOSE} stop api",
+        f"{PROJECT_DOCKER_COMPOSE} build api",
+        f"{PROJECT_DOCKER_COMPOSE} up -d --force-recreate api",
     ))
 
 
@@ -83,13 +136,13 @@ def migrate(app):
     if app:
         click.echo(f"Creating new migration for {app}")
         commands = (
-            "docker-compose exec api python manage.py makemigrations {}".format(app),
-            "docker-compose exec api python manage.py migrate {}".format(app)
+            f"{PROJECT_DOCKER_COMPOSE} exec api python manage.py makemigrations {app}",
+            f"{PROJECT_DOCKER_COMPOSE} exec api python manage.py migrate {app}"
         )
     else:
         commands = (
-            "docker-compose exec api python manage.py makemigrations",
-            "docker-compose exec api python manage.py migrate",
+            f"{PROJECT_DOCKER_COMPOSE} exec api python manage.py makemigrations",
+            f"{PROJECT_DOCKER_COMPOSE} exec api python manage.py migrate",
         )
     do_commands(commands)
 
@@ -124,9 +177,9 @@ def test(path):
         $ ./tools.py test users/tests/test_models.py::UserModelTestCase
     """
     if path:
-        exec_shell_command(f"docker-compose exec api pytest {path}")
+        do_commands([f"{PROJECT_DOCKER_COMPOSE} exec api pytest {path}"])
     else:
-        exec_shell_command("docker-compose exec api pytest")
+        do_commands([f"{PROJECT_DOCKER_COMPOSE} exec api pytest"])
 
 
 @cli.command()
@@ -136,8 +189,8 @@ def black(path):
     if not path:
         path = "/app"
     click.echo(f"Running black on path: {path}")
-    return exec_shell_command(
-        f"docker-compose exec api black --line-length 78 {path}"
+    return do_commands(
+        [f"{PROJECT_DOCKER_COMPOSE} exec api black --line-length 78 {path}"]
     )
 
 
@@ -148,7 +201,7 @@ def flake8(path):
     if not path:
         path = "/app"
     click.echo(f"Running flake8 on path: {path}")
-    return exec_shell_command(f"docker-compose exec api flake8 {path} --exclude=migrations --min-python-version 3.7.0")
+    return do_commands([f"{PROJECT_DOCKER_COMPOSE} exec api flake8 {path} --exclude=migrations --min-python-version 3.7.0"])
 
 
 @cli.command()
@@ -158,8 +211,8 @@ def pydocstyle(path):
     if not path:
         path = "/app"
     click.echo(f"Running pydocstyle on path: {path}")
-    return exec_shell_command(
-        f'docker-compose exec api pydocstyle --convention numpy {path} --match-dir="^(?!migrations).*"'
+    return do_commands(
+        [f'{PROJECT_DOCKER_COMPOSE} exec api pydocstyle --convention numpy {path} --match-dir="^(?!migrations).*"']
     )
 
 
@@ -170,7 +223,7 @@ def prospector(path):
     if not path:
         path = "/app"
     click.echo(f"Running prospector on path: {path}")
-    return exec_shell_command(f"docker-compose exec api prospector {path}")
+    return do_commands([f"{PROJECT_DOCKER_COMPOSE} exec api prospector {path}"])
 
 
 @cli.command()
@@ -180,7 +233,7 @@ def bandit(path):
     if not path:
         path = "/app"
     click.echo(f"Running bandit on path: {path}")
-    return exec_shell_command(f"docker-compose exec api bandit {path}")
+    return do_commands([f"{PROJECT_DOCKER_COMPOSE} exec api bandit {path}"])
 
 
 @cli.command()
@@ -190,7 +243,7 @@ def mypy(path):
     if not path:
         path = "/app"
     click.echo(f"Running mypy on path: {path}")
-    return exec_shell_command(f"docker-compose exec api mypy {path} --strict")
+    return do_commands([f"{PROJECT_DOCKER_COMPOSE} exec api mypy {path} --strict"])
 
 
 @cli.command()

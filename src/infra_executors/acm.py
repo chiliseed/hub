@@ -1,20 +1,31 @@
+"""Manages AWS ACM certificate."""
 import argparse
-from typing import NamedTuple
+from typing import NamedTuple, Any
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_state_key
 from infra_executors.logger import get_logger
-from infra_executors.terraform_executor import TerraformExecutor, ExecutorConfiguration
+from infra_executors.terraform_executor import (
+    ExecutorConfiguration,
+    TerraformExecutor,
+)
 
 logger = get_logger("ssl")
 
 
 class SSLConfigs(NamedTuple):
+    """Configs required for R53."""
+
     zone_id: str
     domain_name: str
 
 
-def create_ssl(creds: AwsCredentials, params: GeneralConfiguration, run_config: SSLConfigs):
+def create_ssl(
+    creds: AwsCredentials,
+    params: GeneralConfiguration,
+    run_config: SSLConfigs,
+) -> Any:
+    """Create ACM certificate."""
     logger.info("Executing run_id=%s", params.run_id)
     executor = TerraformExecutor(
         creds=creds,
@@ -25,14 +36,18 @@ def create_ssl(creds: AwsCredentials, params: GeneralConfiguration, run_config: 
             action="create",
             config_dir="acm",
             state_key=build_state_key(params, "acm"),
-            variables_file_name=""
-        )
+            variables_file_name="",
+        ),
     )
     return executor.execute_apply()
 
 
-def destroy_ssl(creds: AwsCredentials, params: GeneralConfiguration, run_config: SSLConfigs):
-    """Create and apply changes in route 53."""
+def destroy_ssl(
+    creds: AwsCredentials,
+    params: GeneralConfiguration,
+    run_config: SSLConfigs,
+) -> Any:
+    """Create and apply changes in ACM."""
     logger.info("Executing run_id=%s", params.run_id)
     executor = TerraformExecutor(
         creds=creds,
@@ -43,16 +58,14 @@ def destroy_ssl(creds: AwsCredentials, params: GeneralConfiguration, run_config:
             action="destroy",
             config_dir="acm",
             state_key=build_state_key(params, "acm"),
-            variables_file_name=""
-        )
+            variables_file_name="",
+        ),
     )
     return executor.execute_destroy()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Create/destroy acm."
-    )
+    parser = argparse.ArgumentParser(description="Create/destroy acm.")
     parser.add_argument(
         "cmd",
         type=str,
@@ -75,9 +88,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--aws-region", type=str, default="us-east-2", dest="aws_region"
     )
-    parser.add_argument(
-        "--run-id", type=str, default=1, dest="run_id"
-    )
+    parser.add_argument("--run-id", type=str, default=1, dest="run_id")
 
     args = parser.parse_args()
 
@@ -88,8 +99,7 @@ if __name__ == "__main__":
         args.project_name, args.environment, args.run_id, ""
     )
     cmd_configs = SSLConfigs(
-        zone_id="Z1HXHIFC9H0X6C",
-        domain_name="demo.chiliseed.com",
+        zone_id="Z1HXHIFC9H0X6C", domain_name="demo.chiliseed.com",
     )
 
     if args.cmd == "create":

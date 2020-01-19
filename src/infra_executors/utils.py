@@ -4,7 +4,7 @@ import re
 import subprocess  # nosec
 from typing import List, Mapping, Optional, Tuple
 
-import boto3
+import boto3  # type: ignore
 
 from infra_executors.constants import AwsCredentials
 
@@ -16,7 +16,7 @@ def execute_shell_command(
     env_vars: Optional[Mapping[str, str]],
     cwd: Optional[str],
     log_to: Optional[str],
-) -> Tuple:
+) -> Tuple[int, str]:
     """Execute provided command within shell.
 
     Parameters
@@ -121,7 +121,7 @@ def get_session(region: str) -> boto3.session.Session:
     return boto3.session.Session(**session_config)
 
 
-def get_boto3_client(service_name: str, aws_creds: AwsCredentials):
+def get_boto3_client(service_name: str, aws_creds: AwsCredentials) -> boto3.client:
     """Initialize boto3 for the service.
 
     Parameters

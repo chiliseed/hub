@@ -126,6 +126,21 @@ if __name__ == "__main__":
     common = GeneralConfiguration(
         args.project_name, args.environment, args.run_id, args.vpc_id
     )
+    # First run
+    # cmd_configs = ALBConfigs(
+    #     alb_name=f"{common.project_name}-alb",
+    #     ssl_certificate_arn=None,
+    #     open_ports=[
+    #         OpenPort(
+    #             name=f"{common.project_name}-api",
+    #             container_port=7878,
+    #             alb_port_https=443,
+    #             alb_port_http=80,
+    #             health_check_endpoint="/health/check",
+    #             health_check_protocol=HTTP,
+    #         ),
+    #     ],
+    # )
     cmd_configs = ALBConfigs(
         alb_name=f"{common.project_name}-alb",
         ssl_certificate_arn="arn:aws:acm:us-east-2:576465297898:certificate/cc99d5a3-ad29-419d-a23c-5d1c3cfd094a",  # noqa: E501

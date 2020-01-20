@@ -38,6 +38,25 @@ def create_network(
     return executor.execute_apply()
 
 
+def get_network_details(
+    creds: AwsCredentials, params: GeneralConfiguration,
+) -> Any:
+    """Get network details."""
+    executor = TerraformExecutor(
+        creds,
+        params,
+        cmd_configs=None,
+        executor_configs=ExecutorConfiguration(
+            name="network",
+            action="create",
+            config_dir="network",
+            state_key=build_state_key(params, "network"),
+            variables_file_name="network.tfvars",
+        ),
+    )
+    return executor.get_outputs()
+
+
 def destroy_network(
     creds: AwsCredentials, params: GeneralConfiguration,
 ) -> None:

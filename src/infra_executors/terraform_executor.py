@@ -190,21 +190,20 @@ class TerraformExecutor:
 
     def execute_destroy(self) -> None:
         """Run terraform destroy."""
-        try:
-            self.init_terraform()
-            if self.executor_configs.variables_file_name:
-                cmd = [
-                    f"terraform destroy "
-                    f"-auto-approve "
-                    f"-no-color "
-                    f"-var-file={self.executor_configs.variables_file_name}"
-                ]
-            else:
-                cmd = [
-                    f"terraform destroy "
-                    f"-auto-approve "
-                    f"-no-color "
-                ]
-            self.execute_command(cmd)
-        except TerraformExecutorError:
-            logger.error("Failed to destroy infrastructure")
+        self.init_terraform()
+        if self.executor_configs.variables_file_name:
+            cmd = [
+                f"terraform destroy "
+                f"-auto-approve "
+                f"-no-color "
+                f"-var-file={self.executor_configs.variables_file_name}"
+            ]
+        else:
+            cmd = [
+                f"terraform destroy "
+                f"-auto-approve "
+                f"-no-color "
+            ]
+        (destroy_response_code, stdout) = self.execute_command(cmd)
+        if destroy_response_code != 0:
+            raise TerraformExecutorError("Error destroying infrastructure")

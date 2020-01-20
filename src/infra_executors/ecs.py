@@ -119,7 +119,7 @@ def create_ecs_cluster(
     return executor.execute_apply()
 
 
-def destroy_ecs(
+def destroy_ecs_cluster(
     creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: ECSConfigs
 ) -> Any:
     """Destroy ecs cluster and its resources."""
@@ -200,4 +200,4 @@ if __name__ == "__main__":
     if args.cmd == "create":
         create_ecs_cluster(aws_creds, common, cmd_configs)
     if args.cmd == "destroy":
-        destroy_ecs(aws_creds, common, cmd_configs)
+        destroy_ecs_cluster(aws_creds, common, cmd_configs)

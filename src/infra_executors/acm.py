@@ -20,7 +20,7 @@ class SSLConfigs(NamedTuple):
     domain_name: str
 
 
-def create_ssl(
+def create_acm(
     creds: AwsCredentials,
     params: GeneralConfiguration,
     run_config: SSLConfigs,
@@ -42,7 +42,7 @@ def create_ssl(
     return executor.execute_apply()
 
 
-def destroy_ssl(
+def destroy_acm(
     creds: AwsCredentials,
     params: GeneralConfiguration,
     run_config: SSLConfigs,
@@ -62,6 +62,28 @@ def destroy_ssl(
         ),
     )
     return executor.execute_destroy()
+
+
+def get_acm_details(
+    creds: AwsCredentials,
+    params: GeneralConfiguration,
+    run_config: SSLConfigs,
+) -> Any:
+    """Get ACM details."""
+    logger.info("Executing run_id=%s", params.run_id)
+    executor = TerraformExecutor(
+        creds=creds,
+        general_configs=params,
+        cmd_configs=run_config,
+        executor_configs=ExecutorConfiguration(
+            name="acm",
+            action="outputs",
+            config_dir="acm",
+            state_key=build_state_key(params, "acm"),
+            variables_file_name="",
+        ),
+    )
+    return executor.get_outputs()
 
 
 if __name__ == "__main__":
@@ -103,6 +125,6 @@ if __name__ == "__main__":
     )
 
     if args.cmd == "create":
-        create_ssl(aws_creds, common, cmd_configs)
+        create_acm(aws_creds, common, cmd_configs)
     if args.cmd == "destroy":
-        destroy_ssl(aws_creds, common, cmd_configs)
+        destroy_acm(aws_creds, common, cmd_configs)

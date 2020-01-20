@@ -71,6 +71,27 @@ def destroy_route53(
     return executor.execute_destroy()
 
 
+def get_r53_details(
+    creds: AwsCredentials,
+    params: GeneralConfiguration,
+    run_config: Route53Configuration,
+) -> Any:
+    """Get route 53 details."""
+    executor = TerraformExecutor(
+        creds=creds,
+        general_configs=params,
+        cmd_configs=run_config,
+        executor_configs=ExecutorConfiguration(
+            name="route53",
+            action="outputs",
+            config_dir="route53",
+            state_key=build_state_key(params, "route53"),
+            variables_file_name="",
+        ),
+    )
+    return executor.get_outputs()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Create/destroy route 53 hosted zone."

@@ -35,6 +35,10 @@ def create_network(
             variables_file_name="network.tfvars",
         ),
     )
+    network_details = executor.get_outputs()
+    if network_details:
+        logger.info("Network already exists. project_name=%s env_name=%s", params.project_name, params.env_name)
+        return network_details
     return executor.execute_apply()
 
 
@@ -48,7 +52,7 @@ def get_network_details(
         cmd_configs=None,
         executor_configs=ExecutorConfiguration(
             name="network",
-            action="create",
+            action="outputs",
             config_dir="network",
             state_key=build_state_key(params, "network"),
             variables_file_name="network.tfvars",

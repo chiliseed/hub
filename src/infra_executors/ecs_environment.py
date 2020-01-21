@@ -4,6 +4,7 @@ from typing import NamedTuple, Any, Dict
 from infra_executors.acm import create_acm, SSLConfigs, destroy_acm
 from infra_executors.alb import create_alb, ALBConfigs, destroy_alb
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
+from infra_executors.ecr import create_ecr, ECRConfigs
 from infra_executors.ecs import (
     ECSConfigs,
     create_ecs_cluster,
@@ -18,10 +19,13 @@ from infra_executors.route53 import (
     create_route53,
     Route53Configuration,
     destroy_route53,
-    get_r53_details,
 )
 
 logger = get_logger("ecs-env")
+
+
+class ESCEnvironmentError(Exception):
+    """Raised to indicate any errors in the process of building/destroying."""
 
 
 class EnvConfigs(NamedTuple):
@@ -33,12 +37,13 @@ class EnvConfigs(NamedTuple):
     route53: Route53Configuration
 
 
-def create_environment(
-    creds: AwsCredentials,
-    common_conf: GeneralConfiguration,
-    env_conf: EnvConfigs,
-) -> Dict[Any, Any]:
-    """Create new ECS environment."""
+def create_global_parts(creds: AwsCredentials, common_conf: GeneralConfiguration, route53_conf: Route53Configuration):
+    """Creates environment parts that are shared between multiple projects/services.
+
+    Examples:
+        same vpc can host multiple projects, so vpc with name 'development` can host
+        demo api, demo micro service 2 and etc.
+    """
     logger.info(
         "Creating environment network. run_id=%s project_name=%s environment=%s",
         common_conf.run_id,
@@ -48,35 +53,52 @@ def create_environment(
     network = create_network(creds, common_conf)
     logger.info("Created new vpc %s", network["vpc_id"])
 
-    common_conf_with_vpc = GeneralConfiguration(
-        **common_conf._asdict(), vpc_id=network["vpc_id"]
-    )
-
-    logger.info("Creating alb with http")
-    alb = create_alb(creds, common_conf_with_vpc, env_conf.alb)
-    logger.info("Created alb %s with dns %s", alb["alb_name"], alb["alb_arn"])
-
     logger.info("Setting up route 53 for the project")
-    route53 = create_route53(creds, common_conf, env_conf.route53)
-    logger.info("Created new route53 zone: %s", route53["primary_zone_id"])
+    route53 = create_route53(creds, common_conf, route53_conf)
+    logger.info("Created new route53 zone: %s", route53["primary_zone_id"]['value'])
+    return network, route53
 
-    logger.info("Setting up acm certificate")
-    acm = create_acm(
-        creds,
-        common_conf,
-        SSLConfigs(
-            domain_name=env_conf.domain, zone_id=route53["primary_zone_id"]
-        ),
-    )
-    logger.info(
-        "Created acm certificate: %s", acm["this_acm_certificate_arn"]
-    )
+
+def launch_environment_infra(creds: AwsCredentials, common_conf: GeneralConfiguration) -> Any:
+    """Launch infrastructure for new service.
+
+    common_conf.project_name here relates to service being launched.
+    """
+    if not common_conf.vpc_id:
+        raise ESCEnvironmentError("Must provide VPC ID.")
+
+    logger.info("Creating alb.")
+    alb_conf = ALBConfigs(
+            alb_name=f"{common.project_name}-{common.env_name}",
+            ssl_certificate_arn=None,
+            open_ports=[],
+        )
+    alb = create_alb(creds, common_conf, alb_conf)
+    logger.info("Created alb %s with dns %s", alb["alb_name"]['value'], alb["alb_arn"]['value'])
 
     logger.info("Launching ECS cluster")
-    ecs = create_ecs_cluster(creds, common_conf_with_vpc, env_conf.ecs)
+    ecs_conf = ECSConfigs(
+            cluster=f"{common.project_name}-{common.env_name}",
+            instance_group_name=f"{common.project_name}-{common.env_name}",
+            cloudwatch_prefix=f"{common.project_name}-{common.env_name}",
+        )
+    ecs = create_ecs_cluster(creds, common_conf, ecs_conf)
     logger.info("Created ECS cluster %s", ecs["cluster"])
+    return alb, ecs_conf
 
-    return dict(network=network, alb=alb, route53=route53, acm=acm, ecs=ecs,)
+
+def create_environment(
+    creds: AwsCredentials,
+    common_conf: GeneralConfiguration,
+    env_conf: EnvConfigs,
+) -> Dict[Any, Any]:
+    """Create new ECS environment."""
+    network, route53 = create_global_parts(creds, common_conf, env_conf.route53)
+
+    common_conf_with_vpc = common_conf._replace(vpc_id=network["vpc_id"]['value'])
+    alb, ecs = launch_environment_infra(creds, common_conf_with_vpc)
+
+    return dict(network=network, alb=alb, route53=route53, ecs=ecs)
 
 
 def destroy_environment(
@@ -85,8 +107,6 @@ def destroy_environment(
     env_conf: EnvConfigs,
 ):
     """Removes ECS environment."""
-    logger.info("Get route 53 details")
-    route53 = get_r53_details(creds, common_conf, env_conf.route53)
     logger.info("Get network details")
     network = get_network_details(creds, common_conf)
 
@@ -102,16 +122,18 @@ def destroy_environment(
     destroy_alb(creds, common_conf_with_vpc, env_conf.alb)
     logger.info("Removed alb")
 
-    logger.info("Removing acm certificate")
-    destroy_acm(
-        creds,
-        common_conf,
-        SSLConfigs(
-            domain_name=env_conf.domain,
-            zone_id=route53["primary_zone_id"]["value"],
-        ),
-    )
-    logger.info("Removed acm certificate")
+    # logger.info("Get route 53 details")
+    # route53 = get_r53_details(creds, common_conf, env_conf.route53)
+    # logger.info("Removing acm certificate")
+    # destroy_acm(
+    #     creds,
+    #     common_conf,
+    #     SSLConfigs(
+    #         domain_name=env_conf.domain,
+    #         zone_id=route53["primary_zone_id"]["value"],
+    #     ),
+    # )
+    # logger.info("Removed acm certificate")
 
     logger.info("Removing route 53")
     destroy_route53(creds, common_conf, env_conf.route53)

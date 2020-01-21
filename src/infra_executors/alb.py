@@ -65,6 +65,24 @@ def create_alb(
     return executor.execute_apply()
 
 
+def get_alb_details(
+    creds: AwsCredentials, params: GeneralConfiguration, alb_conf: ALBConfigs
+) -> Any:
+    executor = TerraformExecutor(
+        creds=creds,
+        general_configs=params,
+        cmd_configs=alb_conf,
+        executor_configs=ExecutorConfiguration(
+            name="alb",
+            action="outputs",
+            config_dir="alb",
+            state_key=build_state_key(params, "alb"),
+            variables_file_name="",
+        ),
+    )
+    return executor.get_outputs()
+
+
 def destroy_alb(
     creds: AwsCredentials, params: GeneralConfiguration, alb_conf: ALBConfigs
 ) -> Any:

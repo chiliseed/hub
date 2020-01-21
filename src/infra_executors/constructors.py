@@ -42,9 +42,7 @@ def build_env_vars(
         for key, value in cmd_params._asdict().items():
             if isinstance(value, list):
                 try:
-                    formatted_val = json.dumps([
-                        v._asdict() for v in value
-                    ])
+                    formatted_val = json.dumps([v._asdict() for v in value])
                 except AttributeError:
                     # this is not a named tuple
                     formatted_val = json.dumps(value)
@@ -59,7 +57,9 @@ def build_env_vars(
     return env_vars
 
 
-def build_state_key(generic_configs: "GeneralConfiguration", component_name: str) -> str:
+def build_state_key(
+    generic_configs: "GeneralConfiguration", component_name: str
+) -> str:
     """Construct a state key in a unified way.
 
     Parameters
@@ -74,6 +74,8 @@ def build_state_key(generic_configs: "GeneralConfiguration", component_name: str
     state key : str
         s3 key path where the state will be saved
     """
-    return f"{generic_configs.project_name}/" \
-           f"{generic_configs.env_name}/" \
-           f"{component_name}.tfstate"
+    return (
+        f"{generic_configs.project_name}/"
+        f"{generic_configs.env_name}/"
+        f"{component_name}.tfstate"
+    )

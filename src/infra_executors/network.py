@@ -37,7 +37,11 @@ def create_network(
     )
     network_details = executor.get_outputs()
     if network_details:
-        logger.info("Network already exists. project_name=%s env_name=%s", params.project_name, params.env_name)
+        logger.info(
+            "Network already exists. project_name=%s env_name=%s",
+            params.project_name,
+            params.env_name,
+        )
         return network_details
     return executor.execute_apply()
 

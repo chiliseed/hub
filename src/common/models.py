@@ -10,7 +10,7 @@ class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # slug is used for api, instead of id, in order to obscure db state
-    slug = models.SlugField(max_length=20, null=True)
+    slug = models.SlugField(max_length=20, null=True, unique=True)
 
     class Meta:
         """Django Meta conf."""
@@ -25,7 +25,8 @@ class BaseModel(models.Model):
         update_fields=None,
     ):
         """Add custom, general behavior to model save method."""
-        self.slug = get_uuid_hex()
+        if not self.slug:
+            self.slug = get_uuid_hex()
         super().save(
             force_insert=force_insert,
             force_update=force_update,

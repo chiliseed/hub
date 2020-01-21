@@ -13,6 +13,8 @@ class Organization(BaseModel):
 
     name = models.CharField(max_length=254)
 
+    objects = models.Manager()
+
     def __str__(self):
         """Instance repr."""
         return self.name

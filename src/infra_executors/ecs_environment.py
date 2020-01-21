@@ -37,7 +37,11 @@ class EnvConfigs(NamedTuple):
     route53: Route53Configuration
 
 
-def create_global_parts(creds: AwsCredentials, common_conf: GeneralConfiguration, route53_conf: Route53Configuration):
+def create_global_parts(
+    creds: AwsCredentials,
+    common_conf: GeneralConfiguration,
+    route53_conf: Route53Configuration,
+):
     """Creates environment parts that are shared between multiple projects/services.
 
     Examples:
@@ -55,11 +59,15 @@ def create_global_parts(creds: AwsCredentials, common_conf: GeneralConfiguration
 
     logger.info("Setting up route 53 for the project")
     route53 = create_route53(creds, common_conf, route53_conf)
-    logger.info("Created new route53 zone: %s", route53["primary_zone_id"]['value'])
+    logger.info(
+        "Created new route53 zone: %s", route53["primary_zone_id"]["value"]
+    )
     return network, route53
 
 
-def launch_environment_infra(creds: AwsCredentials, common_conf: GeneralConfiguration) -> Any:
+def launch_environment_infra(
+    creds: AwsCredentials, common_conf: GeneralConfiguration
+) -> Any:
     """Launch infrastructure for new service.
 
     common_conf.project_name here relates to service being launched.
@@ -69,19 +77,23 @@ def launch_environment_infra(creds: AwsCredentials, common_conf: GeneralConfigur
 
     logger.info("Creating alb.")
     alb_conf = ALBConfigs(
-            alb_name=f"{common.project_name}-{common.env_name}",
-            ssl_certificate_arn=None,
-            open_ports=[],
-        )
+        alb_name=f"{common.project_name}-{common.env_name}",
+        ssl_certificate_arn=None,
+        open_ports=[],
+    )
     alb = create_alb(creds, common_conf, alb_conf)
-    logger.info("Created alb %s with dns %s", alb["alb_name"]['value'], alb["alb_arn"]['value'])
+    logger.info(
+        "Created alb %s with dns %s",
+        alb["alb_name"]["value"],
+        alb["alb_arn"]["value"],
+    )
 
     logger.info("Launching ECS cluster")
     ecs_conf = ECSConfigs(
-            cluster=f"{common.project_name}-{common.env_name}",
-            instance_group_name=f"{common.project_name}-{common.env_name}",
-            cloudwatch_prefix=f"{common.project_name}-{common.env_name}",
-        )
+        cluster=f"{common.project_name}-{common.env_name}",
+        instance_group_name=f"{common.project_name}-{common.env_name}",
+        cloudwatch_prefix=f"{common.project_name}-{common.env_name}",
+    )
     ecs = create_ecs_cluster(creds, common_conf, ecs_conf)
     logger.info("Created ECS cluster %s", ecs["cluster"])
     return alb, ecs_conf
@@ -93,9 +105,13 @@ def create_environment(
     env_conf: EnvConfigs,
 ) -> Dict[Any, Any]:
     """Create new ECS environment."""
-    network, route53 = create_global_parts(creds, common_conf, env_conf.route53)
+    network, route53 = create_global_parts(
+        creds, common_conf, env_conf.route53
+    )
 
-    common_conf_with_vpc = common_conf._replace(vpc_id=network["vpc_id"]['value'])
+    common_conf_with_vpc = common_conf._replace(
+        vpc_id=network["vpc_id"]["value"]
+    )
     alb, ecs = launch_environment_infra(creds, common_conf_with_vpc)
 
     return dict(network=network, alb=alb, route53=route53, ecs=ecs)

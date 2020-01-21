@@ -153,8 +153,12 @@ DJOSER = {
     # `user_password_reset_confirm` endpoint as a POST request.
     "PASSWORD_RESET_CONFIRM_URL": "password/reset/{uid}/{token}",
     "SERIALIZERS": {
-        # "user": "users.serializers.UserSerializer",
-        # "user_create": "users.serializers.UserCreateSerializer",
+        "user": "users.serializers.UserSerializer",
+        "user_create": "users.serializers.UserCreateSerializer",
     },
     "CREATE_SESSION_ON_LOGIN": True,
+    "LOGIN_FIELDS": "email",
+    "USER_ID_FIELD": "slug",
+    "USER_CREATE_PASSWORD_RETYPE": True,
+    "HIDE_USERS": True,
 }

@@ -1,7 +1,15 @@
 """Executor for terraform configurations."""
 import json
 import os
-from typing import List, Mapping, NamedTuple, Optional, TYPE_CHECKING, Tuple, Any
+from typing import (
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    Any,
+)
 
 from common.crypto import get_uuid_hex
 
@@ -67,7 +75,8 @@ class TerraformExecutor:
             TERRAFORM_DIR, executor_configs.config_dir
         )
         self.run_log = os.path.join(
-            EXEC_LOGS_DIR, f"{executor_configs.name}_{executor_configs.action}_{general_configs.run_id}.log"  # noqa
+            EXEC_LOGS_DIR,
+            f"{executor_configs.name}_{executor_configs.action}_{general_configs.run_id}.log",  # noqa
         )
         self.plan_file = os.path.join(
             PLANS_DIR,
@@ -76,14 +85,20 @@ class TerraformExecutor:
 
     def execute_command(self, cmd: List[str]) -> Tuple[int, str]:
         """Execute terraform shell commands."""
-        logger.info("Executing terraform with vars_file=%s", self.executor_configs.variables_file_name)
+        logger.info(
+            "Executing terraform with vars_file=%s",
+            self.executor_configs.variables_file_name,
+        )
         return execute_shell_command(
             cmd, self.env_vars, self.config_location, self.run_log
         )
 
     def init_terraform(self) -> None:
         """Initialize terraform state."""
-        logger.info("Initializing terraform state. state_key=%s", self.executor_configs.state_key)
+        logger.info(
+            "Initializing terraform state. state_key=%s",
+            self.executor_configs.state_key,
+        )
         (init_return_code, _) = self.execute_command(
             [
                 f"terraform init "
@@ -108,19 +123,19 @@ class TerraformExecutor:
         )
         if self.executor_configs.variables_file_name:
             cmd = [
-                    f"terraform plan "
-                    f"-detailed-exitcode "
-                    f"-no-color "
-                    f"-var-file={self.executor_configs.variables_file_name} "
-                    f"-out={self.plan_file}",
-                ]
+                f"terraform plan "
+                f"-detailed-exitcode "
+                f"-no-color "
+                f"-var-file={self.executor_configs.variables_file_name} "
+                f"-out={self.plan_file}",
+            ]
         else:
-             cmd = [
-                    f"terraform plan "
-                    f"-detailed-exitcode "
-                    f"-no-color "
-                    f"-out={self.plan_file}",
-                ]
+            cmd = [
+                f"terraform plan "
+                f"-detailed-exitcode "
+                f"-no-color "
+                f"-out={self.plan_file}",
+            ]
 
         (plan_return_code, _) = self.execute_command(cmd)
 
@@ -175,9 +190,9 @@ class TerraformExecutor:
     def _get_outputs(self) -> Any:
         """Get output for provided terraform configuration."""
         try:
-            (get_output, stdout) = self.execute_command([
-                f"terraform output -json"
-            ])
+            (get_output, stdout) = self.execute_command(
+                [f"terraform output -json"]
+            )
             if get_output != 0:
                 logger.error(
                     "Failed to get terraform output: %s", self.config_location
@@ -199,11 +214,7 @@ class TerraformExecutor:
                 f"-var-file={self.executor_configs.variables_file_name}"
             ]
         else:
-            cmd = [
-                f"terraform destroy "
-                f"-auto-approve "
-                f"-no-color "
-            ]
+            cmd = [f"terraform destroy " f"-auto-approve " f"-no-color "]
         (destroy_response_code, stdout) = self.execute_command(cmd)
         if destroy_response_code != 0:
             raise TerraformExecutorError("Error destroying infrastructure")

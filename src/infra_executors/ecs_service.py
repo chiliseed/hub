@@ -6,7 +6,12 @@ from infra_executors.alb import ALBConfigs, create_alb, OpenPort, HTTP
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecr import ECRConfigs, create_ecr, destroy_ecr
 from infra_executors.logger import get_logger
-from infra_executors.route53 import Route53Configuration, create_route53, CnameSubDomain, get_r53_details
+from infra_executors.route53 import (
+    Route53Configuration,
+    create_route53,
+    CnameSubDomain,
+    get_r53_details,
+)
 
 logger = get_logger("ecs-service")
 
@@ -31,7 +36,8 @@ def launch_infa_for_service(
         creds,
         common_conf,
         SSLConfigs(
-            domain_name=route53_conf.domain, zone_id=route53['primary_zone_id']['value']
+            domain_name=route53_conf.domain,
+            zone_id=route53["primary_zone_id"]["value"],
         ),
     )
     logger.info(
@@ -39,26 +45,47 @@ def launch_infa_for_service(
     )
 
     logger.info("Updating alb - opening ports.")
-    alb_conf = alb_conf._replace(ssl_certificate_arn=acm['this_acm_certificate_arn']['value'])
+    alb_conf = alb_conf._replace(
+        ssl_certificate_arn=acm["this_acm_certificate_arn"]["value"]
+    )
     alb = create_alb(creds, common_conf, alb_conf)
     logger.info("ALB updated")
 
     logger.info("Update route 53 with subdomains %s")
-    route53_conf = route53_conf._replace(cname_subdomains=route53_conf.cname_subdomains + [CnameSubDomain(subdomain=service_conf.subdomain, route_to=alb['public_dns']['value'])])
+    route53_conf = route53_conf._replace(
+        cname_subdomains=route53_conf.cname_subdomains
+        + [
+            CnameSubDomain(
+                subdomain=service_conf.subdomain,
+                route_to=alb["public_dns"]["value"],
+            )
+        ]
+    )
     route53 = create_route53(creds, common_conf, route53_conf)
-    logger.info("Created new route53 zone: %s", route53["primary_zone_id"]['value'])
+    logger.info(
+        "Created new route53 zone: %s", route53["primary_zone_id"]["value"]
+    )
 
     logger.info("Creating ECR repo for service")
-    ecr_conf = ECRConfigs(repositories=[f"{common_conf.project_name}/{service_conf.name}"])
+    ecr_conf = ECRConfigs(
+        repositories=[f"{common_conf.project_name}/{service_conf.name}"]
+    )
     ecr = create_ecr(creds, common_conf, ecr_conf)
-    logger.info("Created ECR repo %s", ecr["repositories_names"]['value'])
+    logger.info("Created ECR repo %s", ecr["repositories_names"]["value"])
 
     return dict(acm=acm, alb=alb, ecr=ecr)
 
 
-def destroy_service_infra(creds: AwsCredentials, common_conf: GeneralConfiguration, service_conf: ServiceConfiguration, route53_conf: Route53Configuration,):
+def destroy_service_infra(
+    creds: AwsCredentials,
+    common_conf: GeneralConfiguration,
+    service_conf: ServiceConfiguration,
+    route53_conf: Route53Configuration,
+):
     logger.info("Removing ECR repo for service")
-    ecr_conf = ECRConfigs(repositories=[f"{common_conf.project_name}/{service_conf.name}"])
+    ecr_conf = ECRConfigs(
+        repositories=[f"{common_conf.project_name}/{service_conf.name}"]
+    )
     destroy_ecr(creds, common_conf, ecr_conf)
     logger.info("Removed ECR repo")
 
@@ -70,7 +97,8 @@ def destroy_service_infra(creds: AwsCredentials, common_conf: GeneralConfigurati
         creds,
         common_conf,
         SSLConfigs(
-            domain_name=route53_conf.domain, zone_id=route53['primary_zone_id']['value']
+            domain_name=route53_conf.domain,
+            zone_id=route53["primary_zone_id"]["value"],
         ),
     )
     logger.info("Removed ACM")
@@ -128,15 +156,22 @@ if __name__ == "__main__":
             ALBConfigs(
                 alb_name=f"{common.project_name}-{common.env_name}",
                 ssl_certificate_arn=None,
-                open_ports=[OpenPort(
-                    name=args.service_name,
-                    container_port=7878,
-                    alb_port_http=80,
-                    alb_port_https=443,
-                    health_check_endpoint="/health/check",
-                    health_check_protocol=HTTP,
-                )],
-            )
+                open_ports=[
+                    OpenPort(
+                        name=args.service_name,
+                        container_port=7878,
+                        alb_port_http=80,
+                        alb_port_https=443,
+                        health_check_endpoint="/health/check",
+                        health_check_protocol=HTTP,
+                    )
+                ],
+            ),
         )
     if args.cmd == "destroy":
-        destroy_service_infra(aws_creds, common, cmd_conf, Route53Configuration(domain="chiliseed.com", cname_subdomains=[]))
+        destroy_service_infra(
+            aws_creds,
+            common,
+            cmd_conf,
+            Route53Configuration(domain="chiliseed.com", cname_subdomains=[]),
+        )

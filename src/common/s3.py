@@ -30,8 +30,7 @@ def get_s3_client_refreshable(refresh_method):
     session._credentials = session_credentials
     boto3_session = boto3.Session(botocore_session=session)
     return boto3_session.client(
-        "s3",
-        endpoint_url=os.environ.get("LOCALSTACK_S3_ENDPOINT") or None,
+        "s3", endpoint_url=os.environ.get("LOCALSTACK_S3_ENDPOINT") or None,
     )
 
 
@@ -63,10 +62,7 @@ def upload_file(s3_client, file_name, bucket, object_name=None):  # noqa: D413
         )
 
         s3_client.upload_file(
-            file_name,
-            bucket,
-            object_name,
-            Config=config,
+            file_name, bucket, object_name, Config=config,
         )
     except ClientError:
         logger.error("Failed to upload file %s", file_name)

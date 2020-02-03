@@ -49,9 +49,7 @@ def put_task_definition(
             {
                 "name": DEMO_APP,
                 "image": DEMO_API_IMAGE_URI,
-                "portMappings": [
-                    {"containerPort": CONTAINER_PORT, "protocol": "tcp"}
-                ],
+                "portMappings": [{"containerPort": CONTAINER_PORT, "protocol": "tcp"}],
                 "essential": True,
                 "logConfiguration": {
                     "logDriver": "awslogs",
@@ -138,9 +136,7 @@ def create_listener_for_target_group(
                     logger.info("Found listener for https")
                     https = listener
                 else:
-                    logger.warning(
-                        "None http listener found: %s", listener["Protocol"]
-                    )
+                    logger.warning("None http listener found: %s", listener["Protocol"])
     except botocore.exceptions.ClientError:
         logger.info("Listener not found")
 
@@ -179,34 +175,25 @@ def create_listener_for_target_group(
             Protocol="HTTPS",
             Port=443,
             Certificates=[{"CertificateArn": acm_arn}],
-            DefaultActions=[
-                {"Type": "forward", "TargetGroupArn": target_group_arn}
-            ],
+            DefaultActions=[{"Type": "forward", "TargetGroupArn": target_group_arn}],
         )
 
     return https
 
 
 def launch_task_in_cluster(
-    creds: AwsCredentials,
-    target_group_arn: str,
-    task_definition: Any,
-    cluster: str,
+    creds: AwsCredentials, target_group_arn: str, task_definition: Any, cluster: str,
 ) -> Any:
     """Launch service in cluster."""
     client = get_boto3_client("ecs", creds)
     try:
-        resp = client.describe_services(
-            cluster=cluster, services=[SERVICE_NAME]
-        )
+        resp = client.describe_services(cluster=cluster, services=[SERVICE_NAME])
         if resp["services"]:
             logger.info("Updating existing %s service", SERVICE_NAME)
             client.update_service(
                 cluster=cluster,
                 service=SERVICE_NAME,
-                taskDefinition=task_definition["taskDefinition"][
-                    "taskDefinitionArn"
-                ],
+                taskDefinition=task_definition["taskDefinition"]["taskDefinitionArn"],
                 desiredCount=1,
                 deploymentConfiguration={
                     "maximumPercent": 200,
@@ -226,10 +213,7 @@ def launch_task_in_cluster(
         launchType="EC2",
         schedulingStrategy="REPLICA",
         deploymentController={"type": "ECS"},  # rolling update
-        deploymentConfiguration={
-            "maximumPercent": 200,
-            "minimumHealthyPercent": 100,
-        },
+        deploymentConfiguration={"maximumPercent": 200, "minimumHealthyPercent": 100,},
         loadBalancers=[
             {
                 "targetGroupArn": target_group_arn,
@@ -250,10 +234,7 @@ def deploy(
     logger.info("Deploying demo api to cluster: %s", cluster)
     task_definition = put_task_definition(creds, params, cluster)
     launch_task_in_cluster(
-        creds,
-        target_group_arn,
-        task_definition,
-        f"{cluster}-{params.env_name}",
+        creds, target_group_arn, task_definition, f"{cluster}-{params.env_name}",
     )
     logger.info("Demo api deployed")
 
@@ -270,9 +251,7 @@ def wait_for_service_scale(
     waited_seconds = 0
     while waited_seconds < timeout_seconds:
         logger.info("Checking if service scaled to %s", desired_count)
-        resp = client.describe_services(
-            cluster=cluster, services=[service_name]
-        )
+        resp = client.describe_services(cluster=cluster, services=[service_name])
 
         if not resp["services"]:
             raise Exception("Service not found")
@@ -338,15 +317,10 @@ if __name__ == "__main__":
         description="deploy/remove demo api in provided ecs cluster/vpc."
     )
     parser.add_argument(
-        "cmd",
-        type=str,
-        default="deploy",
-        help="Sub command. One of: deploy/remove",
+        "cmd", type=str, default="deploy", help="Sub command. One of: deploy/remove",
     )
     parser.add_argument(
-        "project_name",
-        type=str,
-        help="The name of your project. Example: chiliseed",
+        "project_name", type=str, help="The name of your project. Example: chiliseed",
     )
     parser.add_argument(
         "environment",
@@ -355,9 +329,7 @@ if __name__ == "__main__":
         help="The name of your environment. Example: develop",
     )
     parser.add_argument(
-        "vpc_id",
-        type=str,
-        help="The id of the vpc. Example: vpc-0c5b94e64b709fa24",
+        "vpc_id", type=str, help="The id of the vpc. Example: vpc-0c5b94e64b709fa24",
     )
     parser.add_argument(
         "cluster", type=str, help="Name of ECS cluster to deploy to",
@@ -365,8 +337,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "target_group",
         type=str,
-        help="Load balancer target group arn via which the service will "
-        "be served",
+        help="Load balancer target group arn via which the service will " "be served",
     )
     parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
     parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")

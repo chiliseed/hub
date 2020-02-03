@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "djoser",
     "users",
     "organizations",
+    "aws_environments",
 ]
 
 MIDDLEWARE = [
@@ -162,3 +163,7 @@ DJOSER = {
     "USER_CREATE_PASSWORD_RETYPE": True,
     "HIDE_USERS": True,
 }
+
+FERNET_KEYS = [
+    SECRET_KEY,
+]

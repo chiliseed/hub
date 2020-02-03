@@ -71,15 +71,10 @@ if __name__ == "__main__":
         description="Create/destroy db in the provides vpc."
     )
     parser.add_argument(
-        "cmd",
-        type=str,
-        default="create",
-        help="Sub command. One of: create/destroy",
+        "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
     )
     parser.add_argument(
-        "project_name",
-        type=str,
-        help="The name of your project. Example: chiliseed",
+        "project_name", type=str, help="The name of your project. Example: chiliseed",
     )
     parser.add_argument(
         "environment",
@@ -88,9 +83,7 @@ if __name__ == "__main__":
         help="The name of your environment. Example: develop",
     )
     parser.add_argument(
-        "vpc_id",
-        type=str,
-        help="The id of the vpc. Example: vpc-0c5b94e64b709fa24",
+        "vpc_id", type=str, help="The id of the vpc. Example: vpc-0c5b94e64b709fa24",
     )
     parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
     parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")

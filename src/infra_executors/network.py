@@ -19,9 +19,7 @@ from infra_executors.terraform_executor import (
 logger = get_logger("network")
 
 
-def create_network(
-    creds: AwsCredentials, params: GeneralConfiguration,
-) -> Any:
+def create_network(creds: AwsCredentials, params: GeneralConfiguration,) -> Any:
     """Create vpc with private and subnet network, with internet access."""
     executor = TerraformExecutor(
         creds,
@@ -46,9 +44,7 @@ def create_network(
     return executor.execute_apply()
 
 
-def get_network_details(
-    creds: AwsCredentials, params: GeneralConfiguration,
-) -> Any:
+def get_network_details(creds: AwsCredentials, params: GeneralConfiguration,) -> Any:
     """Get network details."""
     executor = TerraformExecutor(
         creds,
@@ -65,9 +61,7 @@ def get_network_details(
     return executor.get_outputs()
 
 
-def destroy_network(
-    creds: AwsCredentials, params: GeneralConfiguration,
-) -> None:
+def destroy_network(creds: AwsCredentials, params: GeneralConfiguration,) -> None:
     """Destroy vpc that was created with create_network from above."""
     executor = TerraformExecutor(
         creds,
@@ -85,19 +79,12 @@ def destroy_network(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Create/destroy vpc and its network."
+    parser = argparse.ArgumentParser(description="Create/destroy vpc and its network.")
+    parser.add_argument(
+        "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
     )
     parser.add_argument(
-        "cmd",
-        type=str,
-        default="create",
-        help="Sub command. One of: create/destroy",
-    )
-    parser.add_argument(
-        "project_name",
-        type=str,
-        help="The name of your project. Example: chiliseed",
+        "project_name", type=str, help="The name of your project. Example: chiliseed",
     )
     parser.add_argument(
         "environment",
@@ -110,18 +97,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--aws-region", type=str, default="us-east-2", dest="aws_region"
     )
-    parser.add_argument(
-        "--run-id", type=str, default=get_uuid_hex(), dest="run_id"
-    )
+    parser.add_argument("--run-id", type=str, default=get_uuid_hex(), dest="run_id")
 
     args = parser.parse_args()
 
     aws_creds = AwsCredentials(
         args.aws_access_key, args.aws_secret_key, "", args.aws_region
     )
-    common = GeneralConfiguration(
-        args.project_name, args.environment, args.run_id
-    )
+    common = GeneralConfiguration(args.project_name, args.environment, args.run_id)
 
     if args.cmd == "create":
         create_network(aws_creds, common)

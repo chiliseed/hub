@@ -93,19 +93,12 @@ def get_r53_details(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Create/destroy route 53 hosted zone."
+    parser = argparse.ArgumentParser(description="Create/destroy route 53 hosted zone.")
+    parser.add_argument(
+        "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
     )
     parser.add_argument(
-        "cmd",
-        type=str,
-        default="create",
-        help="Sub command. One of: create/destroy",
-    )
-    parser.add_argument(
-        "project_name",
-        type=str,
-        help="The name of your project. Example: chiliseed",
+        "project_name", type=str, help="The name of your project. Example: chiliseed",
     )
     parser.add_argument(
         "environment",
@@ -125,15 +118,11 @@ if __name__ == "__main__":
     aws_creds = AwsCredentials(
         args.aws_access_key, args.aws_secret_key, "", args.aws_region
     )
-    common = GeneralConfiguration(
-        args.project_name, args.environment, args.run_id, ""
-    )
+    common = GeneralConfiguration(args.project_name, args.environment, args.run_id, "")
     cmd_configs = Route53Configuration(
         domain="chiliseed.com",
         cname_subdomains=[
-            CnameSubDomain(
-                "demo", "demo-alb-1852262830.us-east-2.elb.amazonaws.com"
-            )
+            CnameSubDomain("demo", "demo-alb-1852262830.us-east-2.elb.amazonaws.com")
         ],
     )
 

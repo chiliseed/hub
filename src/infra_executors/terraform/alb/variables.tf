@@ -29,11 +29,11 @@ variable "deregistration_delay" {
   description = "The default deregistration delay"
 }
 
-variable "ssl_certificate_arn" {
-  type = string
-  default = ""
-  description = "ARN of a related ACM certificate to use for https."
-}
+//variable "ssl_certificate_arn" {
+//  type = string
+//  default = ""
+//  description = "ARN of a related ACM certificate to use for https."
+//}
 
 // open ports internally talk to containers on ecs over http.
 // externally, ports are setup with https listeners and http redirect to https.
@@ -47,5 +47,6 @@ variable "open_ports" {
     alb_port_http = number
     health_check_endpoint = string
     health_check_protocol = string
+    ssl_certificate_arn = string
   }))
 }

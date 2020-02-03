@@ -12,9 +12,7 @@ class User(AbstractUser, BaseModel):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ("username",)
 
-    email = models.EmailField(
-        _("email address"), blank=False, null=False, unique=True
-    )
+    email = models.EmailField(_("email address"), blank=False, null=False, unique=True)
     organization = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.CASCADE,

@@ -71,9 +71,7 @@ class TerraformExecutor:
         self.executor_configs = executor_configs
 
         self.env_vars = build_env_vars(creds, general_configs, cmd_configs)
-        self.config_location = os.path.join(
-            TERRAFORM_DIR, executor_configs.config_dir
-        )
+        self.config_location = os.path.join(TERRAFORM_DIR, executor_configs.config_dir)
         self.run_log = os.path.join(
             EXEC_LOGS_DIR,
             f"{executor_configs.name}_{executor_configs.action}_{general_configs.run_id}.log",  # noqa
@@ -118,8 +116,7 @@ class TerraformExecutor:
     def prepare_plan(self) -> bool:
         """Run terraform plan."""
         logger.info(
-            "Planning terraform changes. run_id=%s",
-            self.general_configs.run_id,
+            "Planning terraform changes. run_id=%s", self.general_configs.run_id,
         )
         if self.executor_configs.variables_file_name:
             cmd = [
@@ -144,9 +141,7 @@ class TerraformExecutor:
             return False
 
         if plan_return_code == 1 or plan_return_code < 0:
-            logger.error(
-                "Error executing %s plan", self.executor_configs.name
-            )
+            logger.error("Error executing %s plan", self.executor_configs.name)
             return False
         return True
 
@@ -161,8 +156,7 @@ class TerraformExecutor:
             return {}
 
         logger.info(
-            "Successfully applied a plan. run_id=%s",
-            self.general_configs.run_id,
+            "Successfully applied a plan. run_id=%s", self.general_configs.run_id,
         )
 
         return self._get_outputs()
@@ -190,13 +184,9 @@ class TerraformExecutor:
     def _get_outputs(self) -> Any:
         """Get output for provided terraform configuration."""
         try:
-            (get_output, stdout) = self.execute_command(
-                [f"terraform output -json"]
-            )
+            (get_output, stdout) = self.execute_command([f"terraform output -json"])
             if get_output != 0:
-                logger.error(
-                    "Failed to get terraform output: %s", self.config_location
-                )
+                logger.error("Failed to get terraform output: %s", self.config_location)
                 return {}
             return json.loads(stdout)
         except TerraformExecutorError:

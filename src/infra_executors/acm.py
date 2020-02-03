@@ -21,9 +21,7 @@ class SSLConfigs(NamedTuple):
 
 
 def create_acm(
-    creds: AwsCredentials,
-    params: GeneralConfiguration,
-    run_config: SSLConfigs,
+    creds: AwsCredentials, params: GeneralConfiguration, run_config: SSLConfigs,
 ) -> Any:
     """Create ACM certificate."""
     logger.info("Executing run_id=%s", params.run_id)
@@ -43,9 +41,7 @@ def create_acm(
 
 
 def destroy_acm(
-    creds: AwsCredentials,
-    params: GeneralConfiguration,
-    run_config: SSLConfigs,
+    creds: AwsCredentials, params: GeneralConfiguration, run_config: SSLConfigs,
 ) -> Any:
     """Create and apply changes in ACM."""
     logger.info("Executing run_id=%s", params.run_id)
@@ -65,9 +61,7 @@ def destroy_acm(
 
 
 def get_acm_details(
-    creds: AwsCredentials,
-    params: GeneralConfiguration,
-    run_config: SSLConfigs,
+    creds: AwsCredentials, params: GeneralConfiguration, run_config: SSLConfigs,
 ) -> Any:
     """Get ACM details."""
     logger.info("Executing run_id=%s", params.run_id)
@@ -89,15 +83,10 @@ def get_acm_details(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create/destroy acm.")
     parser.add_argument(
-        "cmd",
-        type=str,
-        default="create",
-        help="Sub command. One of: create/destroy",
+        "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
     )
     parser.add_argument(
-        "project_name",
-        type=str,
-        help="The name of your project. Example: chiliseed",
+        "project_name", type=str, help="The name of your project. Example: chiliseed",
     )
     parser.add_argument(
         "environment",
@@ -117,9 +106,7 @@ if __name__ == "__main__":
     aws_creds = AwsCredentials(
         args.aws_access_key, args.aws_secret_key, "", args.aws_region
     )
-    common = GeneralConfiguration(
-        args.project_name, args.environment, args.run_id, ""
-    )
+    common = GeneralConfiguration(args.project_name, args.environment, args.run_id, "")
     cmd_configs = SSLConfigs(
         zone_id="Z1HXHIFC9H0X6C", domain_name="demo.chiliseed.com",
     )

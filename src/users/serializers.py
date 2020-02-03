@@ -1,7 +1,5 @@
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import (
-    ValidationError as DjangoCoreValidationError,
-)
+from django.core.exceptions import ValidationError as DjangoCoreValidationError
 from django.db import IntegrityError, transaction
 from djoser.conf import settings as djoser_settings
 from rest_framework import serializers
@@ -11,9 +9,7 @@ from users.models import User
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        style={"input_type": "password"}, write_only=True
-    )
+    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
     organization = serializers.CharField(max_length=100)
 
     default_error_messages = {

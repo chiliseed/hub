@@ -121,9 +121,7 @@ def get_session(region: str) -> boto3.session.Session:
     return boto3.session.Session(**session_config)
 
 
-def get_boto3_client(
-    service_name: str, aws_creds: AwsCredentials
-) -> boto3.client:
+def get_boto3_client(service_name: str, aws_creds: AwsCredentials) -> boto3.client:
     """Initialize boto3 for the service.
 
     Parameters

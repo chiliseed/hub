@@ -23,7 +23,6 @@ class CreateEnvTestCase(APITestCase):
             access_key_secret="asdfasdfasdfasdf",
         )
         resp = self.client.post(self.url, data=payload, format="json")
-        print(resp.json())
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(Environment.objects.count(), 1)
 

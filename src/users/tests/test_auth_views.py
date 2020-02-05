@@ -6,15 +6,13 @@ from djoser.conf import settings as djconf
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from users.models import User
+from users.tests.factories import UserFactory
 
 
 class AuthTestCase(APITestCase):
     def setUp(self) -> None:
-        self.password = "1234567ASdf"
-        self.user = User.objects.create_user(
-            username="tester", email="tester@foo.com", password=self.password
-        )
+        self.user = UserFactory()
+        self.password = "Aa123ewq!"
 
     def test_no_login(self):
         url = reverse("users:login")

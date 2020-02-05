@@ -18,7 +18,7 @@ class CreateEnvTestCase(APITestCase):
         payload = dict(
             name="test",
             region="us-east-1",
-            domain="test@com",
+            domain="test.com",
             access_key="123asdfg",
             access_key_secret="asdfasdfasdfasdf",
         )
@@ -36,3 +36,21 @@ class CreateEnvTestCase(APITestCase):
         self.assertEqual(env['region'], payload['region'])
         self.assertTrue(payload['access_key'].encode() not in resp.content)
         self.assertTrue(payload['access_key_secret'].encode() not in resp.content)
+
+
+class ListEnvTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.user = UserFactory()
+        self.client.login(username=self.user.email, password="Aa123ewq!")
+        self.url = reverse("aws_env:list_envs")
+
+    def test_list_envs(self):
+        env = Environment.objects.create(
+            name="test",
+            region="us-east-1",
+            domain="test.com",
+            organization=self.user.organization,
+        )
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()[0]["name"], env.name)

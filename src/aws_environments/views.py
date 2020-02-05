@@ -3,6 +3,7 @@ from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from aws_environments.models import Environment
 from aws_environments.serializers import CreateEnvironmentSerializer, EnvironmentSerializer
 
 
@@ -25,3 +26,6 @@ class EnvironmentCreate(CreateAPIView):
 class EnvironmentList(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EnvironmentSerializer
+
+    def get_queryset(self):
+        return Environment.objects.filter(organization=self.request.user.organization)

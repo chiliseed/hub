@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass, asdict
 from typing import NamedTuple
 
+from django.core.validators import URLValidator
 from django.db import models
 from fernet_fields import EncryptedTextField
 
@@ -16,6 +17,14 @@ from infra_executors.route53 import Route53Configuration, CnameSubDomain
 
 class InvalidConfiguration(Exception):
     """Signals bad configuration."""
+
+
+class OptionalSchemeURLValidator(URLValidator):
+    def __call__(self, value):
+        if "://" not in value:
+            value = 'http://' + value
+        print("validating: ", value)
+        super().__call__(value)
 
 
 @dataclass
@@ -44,7 +53,7 @@ class Environment(BaseModel):
     organization = models.ForeignKey("organizations.Organization", blank=False, related_name="aws_environments", on_delete=models.CASCADE)
 
     name = models.CharField(max_length=100)
-    domain = models.CharField(max_length=100, default="")
+    domain = models.CharField(max_length=200, validators=[OptionalSchemeURLValidator()])
     region = models.CharField(
         max_length=20, choices=REGIONS.choices, default=REGIONS.nvirginia
     )

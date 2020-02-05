@@ -3,12 +3,13 @@ from django.test import TestCase
 from organizations.models import Organization
 from users.models import User
 from users.serializers import UserCreateSerializer
+from users.tests.factories import UserFactory
 
 
 class UserModelTestCase(TestCase):
     def test_create_new_user(self):
         email = "foo@bar.com"
-        u = User.objects.create_user(username="tester", email=email)
+        u = UserFactory(email=email)
         self.assertEqual(u.email, email)
         self.assertIsNotNone(u.slug)
 

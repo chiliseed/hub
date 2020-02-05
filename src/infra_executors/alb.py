@@ -1,6 +1,6 @@
 """Manages ALB component."""
 import argparse
-from typing import Any, List, NamedTuple, NewType, Optional
+from typing import Any, List, NamedTuple, NewType
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_state_key

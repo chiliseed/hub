@@ -4,3 +4,4 @@ psycopg2==2.8.4
 djoser==2.0.3
 boto3==1.11.6
 django-fernet-fields==0.6.0
+django-cors-headers==3.2.1

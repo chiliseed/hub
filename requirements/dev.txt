@@ -7,6 +7,8 @@ flake8-typing-imports>=1.1
 bandit
 prospector
 mypy
+factory-boy
+Faker
 
 pytest
 pytest-mock

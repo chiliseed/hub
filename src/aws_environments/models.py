@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass, asdict
 from typing import NamedTuple
 
 from django.db import models
@@ -17,11 +18,15 @@ class InvalidConfiguration(Exception):
     """Signals bad configuration."""
 
 
-class EnvironmentConf(NamedTuple):
+@dataclass
+class EnvironmentConf:
     vpc_id: str
     access_key_id: str
     access_key_secret: str
     r53_zone_id: str
+
+    def to_str(self):
+        return json.dumps(asdict(self))
 
 
 class Environment(BaseModel):
@@ -32,7 +37,7 @@ class Environment(BaseModel):
         environment "development" will build a vpc called "development" where
         the all development services can be launched using chiliseed.
     """
-
+    CONF = EnvironmentConf
     REGIONS = Regions
     PARTS = ("network", "route53",)
 

@@ -3,7 +3,7 @@ from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from aws_environments.models import Environment
+from aws_environments.models import Environment, EnvStatus
 from aws_environments.serializers import CreateEnvironmentSerializer, EnvironmentSerializer
 
 
@@ -20,6 +20,7 @@ class EnvironmentCreate(CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         env = serializer.save()
+        env.set_status(EnvStatus.Statuses.changes_pending, request.user)
         return Response(EnvironmentSerializer(env).data, status=status.HTTP_201_CREATED)
 
 

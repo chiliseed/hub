@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass, asdict
 from typing import NamedTuple
 
+from django.contrib.auth import get_user_model
 from django.core.validators import URLValidator
 from django.db import models
 from fernet_fields import EncryptedTextField
@@ -13,6 +14,9 @@ from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecr import ECRConfigs
 from infra_executors.ecs_service import create_acm_for_service, launch_infa_for_service, ServiceConfiguration
 from infra_executors.route53 import Route53Configuration, CnameSubDomain
+
+
+User = get_user_model()
 
 
 class InvalidConfiguration(Exception):
@@ -38,6 +42,18 @@ class EnvironmentConf:
         return json.dumps(asdict(self))
 
 
+class EnvStatus(BaseModel):
+
+    class Statuses(models.TextChoices):
+        changes_pending = "changes_pending", "Pending changes"
+        ready = "ready", "Ready"
+        error = "error", "Failed to apply changes"
+
+    environment = models.ForeignKey("Environment", on_delete=models.CASCADE, related_name="statuses")
+    status = models.CharField(max_length=30, choices=Statuses.choices)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+
 class Environment(BaseModel):
     """Manages organization environments.
 
@@ -51,6 +67,7 @@ class Environment(BaseModel):
     PARTS = ("network", "route53",)
 
     organization = models.ForeignKey("organizations.Organization", blank=False, related_name="aws_environments", on_delete=models.CASCADE)
+    last_status = models.ForeignKey(EnvStatus, null=True, blank=True, on_delete=models.CASCADE, related_name="env")
 
     name = models.CharField(max_length=100)
     domain = models.CharField(max_length=200, validators=[OptionalSchemeURLValidator()])
@@ -70,6 +87,15 @@ class Environment(BaseModel):
             region=self.region,
             session_key=""
         )
+
+    def set_status(self, status, actor):
+        """Change status of environment."""
+        assert status in EnvStatus.Statuses.values, "Unknown status"
+        assert actor.organization == self.organization, "Actor is from another organization"
+
+        EnvStatus.objects.create(status=status, created_by=actor, environment=self)
+        self.last_status = self.statuses.all().order_by("created_at").last()
+        self.save(update_fields=["last_status"])
 
 
 class ProjectConf(NamedTuple):

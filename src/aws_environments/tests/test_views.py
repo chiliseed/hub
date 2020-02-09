@@ -9,7 +9,7 @@ class CreateEnvTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = UserFactory()
         self.client.login(username=self.user.email, password="Aa123ewq!")
-        self.url = reverse("aws_env:create_env")
+        self.url = reverse("api:aws_env:create_env")
 
     def test_happy_flow(self):
         self.assertIsNotNone(self.user.organization)
@@ -42,7 +42,7 @@ class ListEnvTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = UserFactory()
         self.client.login(username=self.user.email, password="Aa123ewq!")
-        self.url = reverse("aws_env:list_envs")
+        self.url = reverse("api:aws_env:list_envs")
 
     def test_list_envs(self):
         env = Environment.objects.create(

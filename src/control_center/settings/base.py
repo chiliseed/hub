@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "djoser",
+    "django_apscheduler",
 
     "users",
     "organizations",
@@ -176,3 +177,5 @@ FERNET_KEYS = [
 CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_URLS_REGEX = r'^/api/.*$'
+
+APSCHEDULER_DATETIME_FORMAT =  "N j, Y, f:s a"  # Default

@@ -75,6 +75,7 @@ def build_state_key(
         s3 key path where the state will be saved
     """
     return (
+        f"{generic_configs.env_slug}/"
         f"{generic_configs.project_name}/"
         f"{generic_configs.env_name}/"
         f"{component_name}.tfstate"

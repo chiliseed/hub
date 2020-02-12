@@ -22,3 +22,6 @@ urlpatterns = [
     path("shob/", admin.site.urls),
     path("api/", include("api.urls")),
 ]
+
+handler404 = "api.views.custom_404_handler"
+handler500 = "api.views.custom_500_handler"

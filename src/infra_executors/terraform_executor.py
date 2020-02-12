@@ -103,7 +103,7 @@ class TerraformExecutor:
                 f'-backend-config="key={self.executor_configs.state_key}" '
                 f"-no-color "
                 f"-reconfigure "
-                f"-plugin-dir {TERRAFORM_PLUGIN_DIR}"
+                f"-plugin-dir={TERRAFORM_PLUGIN_DIR}"
             ]
         )
         if init_return_code != 0:

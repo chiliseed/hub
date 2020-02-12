@@ -53,6 +53,9 @@ class EnvStatus(BaseModel):
     status = models.CharField(max_length=30, choices=Statuses.choices)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
+    def __str__(self):
+        return f"Environment #{self.environment.id} | Status {self.status}"
+
 
 class Environment(BaseModel):
     """Manages organization environments.
@@ -79,6 +82,10 @@ class Environment(BaseModel):
     def conf(self) -> EnvironmentConf:
         return EnvironmentConf(**json.loads(self.configuration))
 
+    def set_conf(self, conf: EnvironmentConf):
+        self.configuration = conf.to_str()
+        self.save(update_fields=["configuration"])
+
     def get_creds(self) -> AwsCredentials:
         conf = self.conf()
         return AwsCredentials(
@@ -88,10 +95,17 @@ class Environment(BaseModel):
             session_key=""
         )
 
-    def set_status(self, status, actor):
+    def get_latest_run(self):
+        return ExecutionLog.objects.filter(
+            component=ExecutionLog.Components.environment,
+            component_id=self.id,
+        ).latest("created_at")
+
+    def set_status(self, status, actor=None):
         """Change status of environment."""
         assert status in EnvStatus.Statuses.values, "Unknown status"
-        assert actor.organization == self.organization, "Actor is from another organization"
+        if actor:
+            assert actor.organization == self.organization, "Actor is from another organization"
 
         EnvStatus.objects.create(status=status, created_by=actor, environment=self)
         self.last_status = self.statuses.all().order_by("created_at").last()
@@ -266,5 +280,24 @@ class ExecutionLog(BaseModel):
     # specific execution params provided by the user
     params = EncryptedTextField(default="{}")
 
-    component = models.CharField(max_length=50, choices=Components.choices, null=False, blank=False)
-    component_id = models.CharField(max_length=100, null=True, blank=True)
+    component = models.CharField(max_length=50, choices=Components.choices, null=False, blank=False, db_index=True)
+    component_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+
+    @classmethod
+    def register(cls, organization, action, params, component, component_id):
+        """Create ExecutionLog instance to note a change that much happen."""
+        assert action in ExecutionLog.ActionTypes.values, "Unknown action"
+        assert component in ExecutionLog.Components.values, "Unknown component"
+
+        return ExecutionLog.objects.create(
+            organization=organization,
+            action=action,
+            params=json.dumps(params),
+            component=component,
+            component_id=component_id,
+        )
+
+    def get_component_obj(self):
+        if self.component == self.Components.environment:
+            return Environment.objects.get(id=self.component_id)
+        return None

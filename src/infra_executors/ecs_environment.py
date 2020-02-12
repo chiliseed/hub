@@ -29,9 +29,7 @@ class ESCEnvironmentError(Exception):
 class EnvConfigs(NamedTuple):
     """Configuration parameters required to create an environment."""
 
-    alb: ALBConfigs
     domain: str
-    ecs: ECSConfigs
     route53: Route53Configuration
 
 
@@ -73,7 +71,7 @@ def launch_environment_infra(
 
     logger.info("Creating alb.")
     alb_conf = ALBConfigs(
-        alb_name=f"{common.project_name}-{common.env_name}",
+        alb_name=f"{common_conf.project_name}-{common_conf.env_name}",
         open_ports=[],
     )
     alb = create_alb(creds, common_conf, alb_conf)
@@ -83,9 +81,9 @@ def launch_environment_infra(
 
     logger.info("Launching ECS cluster")
     ecs_conf = ECSConfigs(
-        cluster=f"{common.project_name}-{common.env_name}",
-        instance_group_name=f"{common.project_name}-{common.env_name}",
-        cloudwatch_prefix=f"{common.project_name}-{common.env_name}",
+        cluster=f"{common_conf.project_name}-{common_conf.env_name}",
+        instance_group_name=f"{common_conf.project_name}-{common_conf.env_name}",
+        cloudwatch_prefix=f"{common_conf.project_name}-{common_conf.env_name}",
     )
     ecs = create_ecs_cluster(creds, common_conf, ecs_conf)
     logger.info("Created ECS cluster %s", ecs["cluster"])
@@ -181,16 +179,7 @@ if __name__ == "__main__":
     common = GeneralConfiguration(args.project_name, args.environment, args.run_id, "")
 
     cmd_configs = EnvConfigs(
-        alb=ALBConfigs(
-            alb_name=f"{common.project_name}-{common.env_name}",
-            open_ports=[],
-        ),
         domain=args.domain,
-        ecs=ECSConfigs(
-            cluster=f"{common.project_name}-{common.env_name}",
-            instance_group_name=f"{common.project_name}-{common.env_name}",
-            cloudwatch_prefix=f"{common.project_name}-{common.env_name}",
-        ),
         route53=Route53Configuration(domain=args.domain, cname_subdomains=[],),
     )
     if args.cmd == "create":

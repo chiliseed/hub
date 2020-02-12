@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
-from infra_executors.ecs_environment import EnvConfigs, create_environment, create_global_parts
+from infra_executors.ecs_environment import create_global_parts
 from infra_executors.route53 import Route53Configuration
 from .models import Environment, EnvStatus, EnvironmentConf, ExecutionLog
 

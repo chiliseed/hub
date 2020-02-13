@@ -1,10 +1,10 @@
 import json
-from unittest.mock import patch
 
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from aws_environments.models import Environment, ExecutionLog, EnvStatus
+from aws_environments.constants import InfraStatus
+from aws_environments.models import Environment, ExecutionLog
 from users.tests.factories import UserFactory
 
 
@@ -14,8 +14,7 @@ class CreateEnvTestCase(APITestCase):
         self.client.login(username=self.user.email, password="Aa123ewq!")
         self.url = reverse("api:aws_env:create_env")
 
-    @patch("control_center.scheduler.scheduler.add_job")
-    def test_happy_flow(self, mocked_scheduler):
+    def test_happy_flow(self):
         self.assertIsNotNone(self.user.organization)
         self.assertEqual(Environment.objects.count(), 0)
         self.assertEqual(ExecutionLog.objects.count(), 0)
@@ -31,13 +30,12 @@ class CreateEnvTestCase(APITestCase):
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(Environment.objects.count(), 1)
         self.assertEqual(ExecutionLog.objects.count(), 1)
-        mocked_scheduler.assert_called_once()
 
         env = Environment.objects.first()
         self.assertEqual(env.name, payload["name"])
         conf = env.conf()
         self.assertEqual(conf.access_key_id, payload["access_key"])
-        self.assertEqual(env.last_status.status, EnvStatus.Statuses.changes_pending)
+        self.assertEqual(env.last_status.status, InfraStatus.changes_pending)
 
         json_resp = resp.json()
         env = json_resp["env"]
@@ -51,6 +49,23 @@ class CreateEnvTestCase(APITestCase):
         self.assertEqual(log_slug, log.slug)
         self.assertEqual(log.action, ExecutionLog.ActionTypes.create)
         self.assertEqual(log.params, json.dumps(payload))
+
+    def test_invalid_domain(self):
+        self.assertEqual(Environment.objects.count(), 0)
+        self.assertEqual(ExecutionLog.objects.count(), 0)
+
+        payload = dict(
+            name="test",
+            region="us-east-1",
+            domain="test",
+            access_key="123asdfg",
+            access_key_secret="asdfasdfasdfasdf",
+        )
+        resp = self.client.post(self.url, data=payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(Environment.objects.count(), 0)
+        self.assertEqual(ExecutionLog.objects.count(), 0)
+        self.assertTrue("Enter a valid URL." in resp.json()["domain"][0])
 
 
 class ListEnvTestCase(APITestCase):
@@ -69,3 +84,7 @@ class ListEnvTestCase(APITestCase):
         resp = self.client.get(self.url, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()[0]["name"], env.name)
+
+
+class CreateProjectTestCase(APITestCase):
+    pass

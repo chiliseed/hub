@@ -16,7 +16,7 @@ class AuthTestCase(APITestCase):
 
     def test_no_login(self):
         url = reverse("api:users:login")
-        resp = self.client.post(url, {"email": "foo", "password": "barbar1"})
+        resp = self.client.post(url, {"email": "foo", "password": "barbar1"}, format="json")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_login(self):
@@ -25,7 +25,7 @@ class AuthTestCase(APITestCase):
         self.assertEqual(Session.objects.count(), 0)
         url = reverse("api:users:login")
         resp = self.client.post(
-            url, {"email": self.user.email, "password": self.password}
+            url, {"email": self.user.email, "password": self.password}, format="json"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
@@ -36,14 +36,14 @@ class AuthTestCase(APITestCase):
     def test_logout(self):
         url = reverse("api:users:login")
         resp = self.client.post(
-            url, {"email": self.user.email, "password": self.password}
+            url, {"email": self.user.email, "password": self.password}, format="json"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(djconf.TOKEN_MODEL.objects.count(), 1)
         self.assertEqual(Session.objects.count(), 1)
 
         url2 = reverse("api:users:logout")
-        resp2 = self.client.post(url2)
+        resp2 = self.client.post(url2, format="json")
         self.assertEqual(resp2.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(djconf.TOKEN_MODEL.objects.count(), 0)
         self.assertEqual(Session.objects.count(), 0)

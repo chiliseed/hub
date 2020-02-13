@@ -1,7 +1,6 @@
 from django.db import transaction
 from rest_framework import status
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from aws_environments.jobs import create_environment_infra
@@ -11,7 +10,6 @@ from control_center.scheduler import scheduler
 
 
 class EnvironmentCreate(CreateAPIView):
-    permission_classes = [IsAuthenticated]
     serializer_class = CreateEnvironmentSerializer
 
     def get_serializer_context(self):
@@ -39,7 +37,6 @@ class EnvironmentCreate(CreateAPIView):
 
 
 class EnvironmentList(ListAPIView):
-    permission_classes = [IsAuthenticated]
     serializer_class = EnvironmentSerializer
 
     def get_queryset(self):
@@ -47,10 +44,13 @@ class EnvironmentList(ListAPIView):
 
 
 class ExecutionLogDetailsView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
     serializer_class = ExecutionLogSerializer
     lookup_url_kwarg = "slug"
     lookup_field = "slug"
 
     def get_queryset(self):
         return ExecutionLog.objects.filter(organization=self.request.user.organization)
+
+
+# class CreateProject(CreateAPIView):
+

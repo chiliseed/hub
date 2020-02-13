@@ -37,14 +37,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "corsheaders",
     "django_extensions",
     "rest_framework",
     "rest_framework.authtoken",
     "djoser",
     "django_apscheduler",
-
     "users",
     "organizations",
     "aws_environments",
@@ -53,7 +51,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -141,15 +139,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
-    'DEFAULT_PARSER_CLASSES': [
-        'rest_framework.parsers.JSONParser',
-    ]
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated",],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer",],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser",],
 }
 
 AUTH_USER_MODEL = "users.User"
@@ -184,6 +176,6 @@ FERNET_KEYS = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-CORS_URLS_REGEX = r'^/api/.*$'
+CORS_URLS_REGEX = r"^/api/.*$"
 
-APSCHEDULER_DATETIME_FORMAT =  "N j, Y, f:s a"  # Default
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"  # Default

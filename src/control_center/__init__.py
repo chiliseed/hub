@@ -5,10 +5,11 @@ import sys
 
 def handle_shutdown(signum, frame):
     from .scheduler import scheduler
-    print('Signal handler called with signal ', signum)
+
+    print("Signal handler called with signal ", signum)
     print("waiting for scheduler jobs to finish...")
     scheduler.shutdown()
-    print('stopped'.upper())
+    print("stopped".upper())
     sys.exit(0)
 
 

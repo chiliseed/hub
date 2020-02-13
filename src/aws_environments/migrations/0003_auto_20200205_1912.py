@@ -7,13 +7,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_environments', '0002_auto_20200205_1653'),
+        ("aws_environments", "0002_auto_20200205_1653"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='environment',
-            name='domain',
-            field=models.CharField(max_length=200, validators=[aws_environments.models.OptionalSchemeURLValidator()]),
+            model_name="environment",
+            name="domain",
+            field=models.CharField(
+                max_length=200,
+                validators=[aws_environments.models.OptionalSchemeURLValidator()],
+            ),
         ),
     ]

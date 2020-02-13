@@ -22,6 +22,7 @@ class AwsCredentials(NamedTuple):
 
 class GeneralConfiguration(NamedTuple):
     """Common execution configs."""
+
     env_slug: str
     project_name: str
     env_name: str

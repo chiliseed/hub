@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from aws_environments.models import Environment, ExecutionLog, EnvStatus
+from aws_environments.models import Environment, ExecutionLog, EnvStatus, Project
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):
@@ -14,7 +14,7 @@ class CreateEnvironmentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         payload = {
             **validated_data,
-            'organization_id': self.context['user'].organization_id,
+            "organization_id": self.context["user"].organization_id,
         }
         payload["configuration"] = Environment.CONF(
             vpc_id="",
@@ -39,7 +39,15 @@ class EnvironmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Environment
-        fields = ("slug", "name", "region", "domain", "created_at", "updated_at", "last_status")
+        fields = (
+            "slug",
+            "name",
+            "region",
+            "domain",
+            "created_at",
+            "updated_at",
+            "last_status",
+        )
 
 
 class ExecutionLogSerializer(serializers.ModelSerializer):
@@ -47,7 +55,24 @@ class ExecutionLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExecutionLog
-        fields = ("slug", "action", "is_success", "ended_at", "component", "component_slug")
+        fields = (
+            "slug",
+            "action",
+            "is_success",
+            "ended_at",
+            "component",
+            "component_slug",
+        )
 
     def get_component_slug(self, obj):
         return obj.get_component_obj().slug
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = (
+            "slug",
+            "name",
+        )
+        read_only_fields = ("slug",)

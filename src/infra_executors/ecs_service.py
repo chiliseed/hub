@@ -140,10 +140,10 @@ if __name__ == "__main__":
 
     if args.cmd == "create":
         r53_conf = Route53Configuration(domain="chiliseed.com", cname_subdomains=[])
-        acm_arn = create_acm_for_service(aws_creds, common, r53_conf, cmd_conf.subdomain)
-        ecr_conf = ECRConfigs(
-            repositories=[f"{common.project_name}/{cmd_conf.name}"]
+        acm_arn = create_acm_for_service(
+            aws_creds, common, r53_conf, cmd_conf.subdomain
         )
+        ecr_conf = ECRConfigs(repositories=[f"{common.project_name}/{cmd_conf.name}"])
 
         launch_infa_for_service(
             aws_creds,

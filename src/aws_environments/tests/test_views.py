@@ -34,19 +34,19 @@ class CreateEnvTestCase(APITestCase):
         mocked_scheduler.assert_called_once()
 
         env = Environment.objects.first()
-        self.assertEqual(env.name, payload['name'])
+        self.assertEqual(env.name, payload["name"])
         conf = env.conf()
-        self.assertEqual(conf.access_key_id, payload['access_key'])
+        self.assertEqual(conf.access_key_id, payload["access_key"])
         self.assertEqual(env.last_status.status, EnvStatus.Statuses.changes_pending)
 
         json_resp = resp.json()
-        env = json_resp['env']
-        self.assertEqual(env['name'], payload['name'])
-        self.assertEqual(env['region'], payload['region'])
-        self.assertTrue(payload['access_key'].encode() not in resp.content)
-        self.assertTrue(payload['access_key_secret'].encode() not in resp.content)
+        env = json_resp["env"]
+        self.assertEqual(env["name"], payload["name"])
+        self.assertEqual(env["region"], payload["region"])
+        self.assertTrue(payload["access_key"].encode() not in resp.content)
+        self.assertTrue(payload["access_key_secret"].encode() not in resp.content)
 
-        log_slug = json_resp['log']
+        log_slug = json_resp["log"]
         log = ExecutionLog.objects.first()
         self.assertEqual(log_slug, log.slug)
         self.assertEqual(log.action, ExecutionLog.ActionTypes.create)

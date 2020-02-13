@@ -6,13 +6,11 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_environments', '0001_initial'),
+        ("aws_environments", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='environment',
-            name='domain',
-            field=models.URLField(),
+            model_name="environment", name="domain", field=models.URLField(),
         ),
     ]

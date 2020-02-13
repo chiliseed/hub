@@ -16,7 +16,9 @@ class AuthTestCase(APITestCase):
 
     def test_no_login(self):
         url = reverse("api:users:login")
-        resp = self.client.post(url, {"email": "foo", "password": "barbar1"}, format="json")
+        resp = self.client.post(
+            url, {"email": "foo", "password": "barbar1"}, format="json"
+        )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_login(self):

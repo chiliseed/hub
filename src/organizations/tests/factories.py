@@ -11,4 +11,4 @@ class OrganizationFactory(DjangoModelFactory):
 
     class Meta:
         model = Organization
-        django_get_or_create = ("name", )
+        django_get_or_create = ("name",)

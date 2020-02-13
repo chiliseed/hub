@@ -9,7 +9,7 @@ from users.models import User
 class UserFactory(DjangoModelFactory):
     organization = SubFactory(OrganizationFactory)
     password = LazyFunction(lambda: make_password("Aa123ewq!"))
-    email = Faker('email')
+    email = Faker("email")
 
     class Meta:
         model = User

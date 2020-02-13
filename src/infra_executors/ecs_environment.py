@@ -59,7 +59,7 @@ def create_global_parts(
     return network, route53
 
 
-def launch_environment_infra(
+def launch_project_infra(
     creds: AwsCredentials, common_conf: GeneralConfiguration
 ) -> Any:
     """Launch infrastructure for new service.
@@ -71,8 +71,7 @@ def launch_environment_infra(
 
     logger.info("Creating alb.")
     alb_conf = ALBConfigs(
-        alb_name=f"{common_conf.project_name}-{common_conf.env_name}",
-        open_ports=[],
+        alb_name=f"{common_conf.project_name}-{common_conf.env_name}", open_ports=[],
     )
     alb = create_alb(creds, common_conf, alb_conf)
     logger.info(
@@ -97,7 +96,7 @@ def create_environment(
     network, route53 = create_global_parts(creds, common_conf, env_conf.route53)
 
     common_conf_with_vpc = common_conf._replace(vpc_id=network["vpc_id"]["value"])
-    alb, ecs = launch_environment_infra(creds, common_conf_with_vpc)
+    alb, ecs = launch_project_infra(creds, common_conf_with_vpc)
 
     return dict(network=network, alb=alb, route53=route53, ecs=ecs)
 

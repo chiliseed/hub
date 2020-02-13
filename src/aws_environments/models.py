@@ -1,18 +1,24 @@
 import json
 from dataclasses import dataclass, asdict
+from datetime import datetime
 from typing import NamedTuple
 
+import pytz
 from django.contrib.auth import get_user_model
 from django.core.validators import URLValidator
 from django.db import models
 from fernet_fields import EncryptedTextField
 
-from aws_environments.constants import Regions
+from aws_environments.constants import Regions, InfraStatus
 from common.models import BaseModel
 from infra_executors.alb import HTTP, ALBConfigs, OpenPort
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecr import ECRConfigs
-from infra_executors.ecs_service import create_acm_for_service, launch_infa_for_service, ServiceConfiguration
+from infra_executors.ecs_service import (
+    create_acm_for_service,
+    launch_infa_for_service,
+    ServiceConfiguration,
+)
 from infra_executors.route53 import Route53Configuration, CnameSubDomain
 
 
@@ -26,7 +32,7 @@ class InvalidConfiguration(Exception):
 class OptionalSchemeURLValidator(URLValidator):
     def __call__(self, value):
         if "://" not in value:
-            value = 'http://' + value
+            value = "http://" + value
         print("validating: ", value)
         super().__call__(value)
 
@@ -43,15 +49,13 @@ class EnvironmentConf:
 
 
 class EnvStatus(BaseModel):
-
-    class Statuses(models.TextChoices):
-        changes_pending = "changes_pending", "Pending changes"
-        ready = "ready", "Ready"
-        error = "error", "Failed to apply changes"
-
-    environment = models.ForeignKey("Environment", on_delete=models.CASCADE, related_name="statuses")
-    status = models.CharField(max_length=30, choices=Statuses.choices)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    environment = models.ForeignKey(
+        "Environment", on_delete=models.CASCADE, related_name="statuses"
+    )
+    status = models.CharField(max_length=30, choices=InfraStatus.choices)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     def __str__(self):
         return f"Environment #{self.environment.id} | Status {self.status}"
@@ -65,12 +69,23 @@ class Environment(BaseModel):
         environment "development" will build a vpc called "development" where
         the all development services can be launched using chiliseed.
     """
+
     CONF = EnvironmentConf
     REGIONS = Regions
-    PARTS = ("network", "route53",)
+    PARTS = (
+        "network",
+        "route53",
+    )
 
-    organization = models.ForeignKey("organizations.Organization", blank=False, related_name="aws_environments", on_delete=models.CASCADE)
-    last_status = models.ForeignKey(EnvStatus, null=True, blank=True, on_delete=models.CASCADE, related_name="env")
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        blank=False,
+        related_name="aws_environments",
+        on_delete=models.CASCADE,
+    )
+    last_status = models.ForeignKey(
+        EnvStatus, null=True, blank=True, on_delete=models.CASCADE, related_name="env"
+    )
 
     name = models.CharField(max_length=100)
     domain = models.CharField(max_length=200, validators=[OptionalSchemeURLValidator()])
@@ -92,30 +107,50 @@ class Environment(BaseModel):
             access_key=conf.access_key_id,
             secret_key=conf.access_key_secret,
             region=self.region,
-            session_key=""
+            session_key="",
         )
 
     def get_latest_run(self):
         return ExecutionLog.objects.filter(
-            component=ExecutionLog.Components.environment,
-            component_id=self.id,
+            component=ExecutionLog.Components.environment, component_id=self.id,
         ).latest("created_at")
 
     def set_status(self, status, actor=None):
         """Change status of environment."""
-        assert status in EnvStatus.Statuses.values, "Unknown status"
+        assert status in InfraStatus.values, "Unknown status"
         if actor:
-            assert actor.organization == self.organization, "Actor is from another organization"
+            assert (
+                actor.organization == self.organization
+            ), "Actor is from another organization"
 
-        EnvStatus.objects.create(status=status, created_by=actor, environment=self)
+        status = EnvStatus(status=status, created_by=actor, environment=self)
+        status.save()
         self.last_status = self.statuses.all().order_by("created_at").last()
         self.save(update_fields=["last_status"])
 
 
-class ProjectConf(NamedTuple):
+@dataclass
+class ProjectConf:
     alb_name: str
     alb_public_dns: str
     ecs_cluster: str
+
+    def to_str(self):
+        return json.dumps(asdict(self))
+
+
+class ProjectStatus(BaseModel):
+
+    project = models.ForeignKey(
+        "Project", on_delete=models.CASCADE, related_name="statuses"
+    )
+    status = models.CharField(max_length=30, choices=InfraStatus.choices)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    def __str__(self):
+        return f"Environment #{self.project.id} | Status {self.status}"
 
 
 class Project(BaseModel):
@@ -126,14 +161,47 @@ class Project(BaseModel):
 
     This directly maps to ECS cluster with ALB.
     """
-    PARTS = ("alb", "ecs",)
 
-    organization = models.ForeignKey("organizations.Organization", blank=False, related_name="aws_projects",
-                                     on_delete=models.CASCADE)
-    environment = models.ForeignKey(Environment, related_name="projects", on_delete=models.CASCADE)
+    PARTS = (
+        "alb",
+        "ecs",
+    )
+
+    last_status = models.ForeignKey(
+        ProjectStatus,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="project_object",
+    )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        blank=False,
+        related_name="aws_projects",
+        on_delete=models.CASCADE,
+    )
+    environment = models.ForeignKey(
+        Environment, related_name="projects", on_delete=models.CASCADE
+    )
 
     name = models.CharField(max_length=100, null=False, blank=False)
     configuration = EncryptedTextField(default="{}")
+
+    def set_conf(self, conf: ProjectConf):
+        self.configuration = conf.to_str()
+        self.save(update_fields=["configuration"])
+
+    def set_status(self, status, actor=None):
+        """Change status of project."""
+        assert status in InfraStatus.values, "Unknown status"
+        if actor:
+            assert (
+                actor.organization == self.organization
+            ), "Actor is from another organization"
+
+        status = ProjectStatus(status=status, created_by=actor, environment=self)
+        status.save()
+        self.last_status = self.statuses.all().order_by("created_at").last()
+        self.save(update_fields=["last_status"])
 
     def conf(self) -> ProjectConf:
         return ProjectConf(**json.loads(self.configuration))
@@ -141,6 +209,7 @@ class Project(BaseModel):
     def get_common_conf(self, exec_log_slug) -> GeneralConfiguration:
         env_conf = self.environment.conf()
         return GeneralConfiguration(
+            env_slug=self.environment.slug,
             project_name=self.name,
             env_name=self.environment.name,
             run_id=exec_log_slug,
@@ -149,12 +218,14 @@ class Project(BaseModel):
 
     def get_r53_conf(self) -> Route53Configuration:
         cnames = [
-            CnameSubDomain(subdomain=service.subdomain, route_to=service.project.conf().alb_public_dns)
+            CnameSubDomain(
+                subdomain=service.subdomain,
+                route_to=service.project.conf().alb_public_dns,
+            )
             for service in self.services.select_related("project").all()
         ]
         return Route53Configuration(
-            domain=self.environment.domain,
-            cname_subdomains=cnames
+            domain=self.environment.domain, cname_subdomains=cnames
         )
 
     def get_alb_conf(self) -> ALBConfigs:
@@ -200,10 +271,21 @@ class Service(BaseModel):
 
     This directly maps to ECS TargetGroup/Service +
     """
-    PARTS = ("acm", "alb", "route53", "ecr",)
 
-    project = models.ForeignKey(Project, related_name="services", on_delete=models.CASCADE,
-                                null=False, blank=False)
+    PARTS = (
+        "acm",
+        "alb",
+        "route53",
+        "ecr",
+    )
+
+    project = models.ForeignKey(
+        Project,
+        related_name="services",
+        on_delete=models.CASCADE,
+        null=False,
+        blank=False,
+    )
 
     name = models.CharField(max_length=100, null=False, blank=False)
     subdomain = models.CharField(max_length=50, null=False, blank=False)
@@ -225,40 +307,38 @@ class Service(BaseModel):
 
         acm_arn = create_acm_for_service(creds, common_conf, r53_conf, subdomain)
 
-        service_conf = ServiceConfiguration(
-            name=name,
-            subdomain=subdomain
-        )
+        service_conf = ServiceConfiguration(name=name, subdomain=subdomain)
 
         alb_conf = project.get_alb_conf()
         ecr_conf = project.get_ecr_conf()
         ecr_repo_name = f"{project.name}/{name}"
-        ecr_conf = ecr_conf._replace(repositories=ecr_conf.repositories + [ecr_repo_name])
+        ecr_conf = ecr_conf._replace(
+            repositories=ecr_conf.repositories + [ecr_repo_name]
+        )
 
         launch_infa_for_service(
             creds, common_conf, service_conf, r53_conf, alb_conf, ecr_conf
         )
 
-        service = Service(
-            project=project,
-            name=name,
-            subdomain=subdomain,
+        service = Service(project=project, name=name, subdomain=subdomain,)
+        service.set_configuration(
+            ServiceConf(
+                acm_arn=acm_arn,
+                container_port=execution_log.params["container_port"],
+                alb_port_http=execution_log.params["alb_port_http"],
+                alb_port_https=execution_log.params["alb_port_https"],
+                health_check_endpoint=execution_log.params["health_check_endpoint"],
+                health_check_protocol=HTTP,
+                ecr_repo_name=ecr_repo_name,
+            )
         )
-        service.set_configuration(ServiceConf(
-            acm_arn=acm_arn,
-            container_port=execution_log.params["container_port"],
-            alb_port_http=execution_log.params["alb_port_http"],
-            alb_port_https=execution_log.params['alb_port_https'],
-            health_check_endpoint=execution_log.params["health_check_endpoint"],
-            health_check_protocol=HTTP,
-            ecr_repo_name=ecr_repo_name
-        ))
         service.save()
         return service
 
 
 class ExecutionLog(BaseModel):
     """Manages infra executor logs for a specific change."""
+
     class ActionTypes(models.TextChoices):
         create = "create"
         destroy = "destroy"
@@ -270,18 +350,32 @@ class ExecutionLog(BaseModel):
         project = "project"
         environment = "environment"
 
-    organization = models.ForeignKey("organizations.Organization", blank=False, related_name="aws_runs",
-                                     on_delete=models.CASCADE)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        blank=False,
+        related_name="aws_runs",
+        on_delete=models.CASCADE,
+    )
 
-    action = models.CharField(max_length=50, choices=ActionTypes.choices, null=False, blank=False)
+    action = models.CharField(
+        max_length=50, choices=ActionTypes.choices, null=False, blank=False
+    )
     is_success = models.NullBooleanField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
 
     # specific execution params provided by the user
     params = EncryptedTextField(default="{}")
 
-    component = models.CharField(max_length=50, choices=Components.choices, null=False, blank=False, db_index=True)
-    component_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    component = models.CharField(
+        max_length=50,
+        choices=Components.choices,
+        null=False,
+        blank=False,
+        db_index=True,
+    )
+    component_id = models.CharField(
+        max_length=100, null=True, blank=True, db_index=True
+    )
 
     @classmethod
     def register(cls, organization, action, params, component, component_id):
@@ -301,3 +395,8 @@ class ExecutionLog(BaseModel):
         if self.component == self.Components.environment:
             return Environment.objects.get(id=self.component_id)
         return None
+
+    def mark_result(self, is_success):
+        self.is_success = is_success
+        self.ended_at = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        self.save(update_fields=["is_success", "ended_at"])

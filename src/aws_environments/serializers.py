@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
-from aws_environments.models import Environment, ExecutionLog, EnvStatus, Project
+from aws_environments.models import (
+    Environment,
+    ExecutionLog,
+    EnvStatus,
+    Project,
+    ProjectStatus,
+)
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):
@@ -22,7 +28,6 @@ class CreateEnvironmentSerializer(serializers.ModelSerializer):
             access_key_secret=payload.pop("access_key_secret"),
             r53_zone_id="",
         ).to_str()
-        print("create payload is", payload)
         return super().create(payload)
 
     # todo add validation of access key and secret
@@ -68,11 +73,22 @@ class ExecutionLogSerializer(serializers.ModelSerializer):
         return obj.get_component_obj().slug
 
 
+class ProjectStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectStatus
+        fields = ("slug", "status", "created_at")
+
+
 class ProjectSerializer(serializers.ModelSerializer):
+    environment = EnvironmentSerializer(read_only=True)
+    last_status = ProjectStatusSerializer(read_only=True)
+
     class Meta:
         model = Project
         fields = (
             "slug",
             "name",
+            "environment",
+            "last_status",
         )
         read_only_fields = ("slug",)

@@ -101,6 +101,9 @@ class CreateProject(CreateAPIView):
         )
 
         return Response(
-            dict(project=EnvironmentSerializer(env).data, log=exec_log.slug),
+            dict(
+                project=self.get_serializer_class()(instance=project).data,
+                log=exec_log.slug,
+            ),
             status=status.HTTP_201_CREATED,
         )

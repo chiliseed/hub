@@ -185,6 +185,9 @@ class Project(BaseModel):
     name = models.CharField(max_length=100, null=False, blank=False)
     configuration = EncryptedTextField(default="{}")
 
+    class Meta:
+        unique_together = ["environment_id", "name"]
+
     def set_conf(self, conf: ProjectConf):
         self.configuration = conf.to_str()
         self.save(update_fields=["configuration"])
@@ -197,7 +200,7 @@ class Project(BaseModel):
                 actor.organization == self.organization
             ), "Actor is from another organization"
 
-        status = ProjectStatus(status=status, created_by=actor, environment=self)
+        status = ProjectStatus(status=status, created_by=actor, project=self)
         status.save()
         self.last_status = self.statuses.all().order_by("created_at").last()
         self.save(update_fields=["last_status"])

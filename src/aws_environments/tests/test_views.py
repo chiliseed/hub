@@ -4,7 +4,8 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from aws_environments.constants import InfraStatus
-from aws_environments.models import Environment, ExecutionLog
+from aws_environments.models import Environment, ExecutionLog, Project, ProjectStatus
+from aws_environments.tests.factories import EnvironmentFactory
 from users.tests.factories import UserFactory
 
 
@@ -87,4 +88,24 @@ class ListEnvTestCase(APITestCase):
 
 
 class CreateProjectTestCase(APITestCase):
-    pass
+    def setUp(self) -> None:
+        self.user = UserFactory()
+        self.env = EnvironmentFactory(organization=self.user.organization)
+        self.env.set_status(InfraStatus.ready, None)
+        self.client.login(username=self.user.email, password="Aa123ewq!")
+        self.url = reverse("api:aws_env:create_project", args=(self.env.slug,))
+
+    def test_happy_flow(self):
+        self.assertEqual(Project.objects.count(), 0)
+
+        payload = dict(name="foofie")
+        resp = self.client.post(self.url, payload, format="json")
+        self.assertEqual(resp.status_code, 201)
+
+        self.assertEqual(Project.objects.count(), 1)
+        project = Project.objects.first()
+        self.assertEqual(project.slug, resp.json()["project"]["slug"])
+        self.assertEqual(
+            project.last_status.status, resp.json()["project"]["last_status"]["status"]
+        )
+        self.assertEqual(project.last_status.status, InfraStatus.changes_pending)

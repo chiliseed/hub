@@ -93,6 +93,9 @@ class Environment(BaseModel):
     )
     configuration = EncryptedTextField(default="{}")
 
+    class Meta:
+        unique_together = ["organization_id", "name"]
+
     def conf(self) -> EnvironmentConf:
         return EnvironmentConf(**json.loads(self.configuration))
 

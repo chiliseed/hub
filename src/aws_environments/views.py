@@ -6,7 +6,9 @@ from rest_framework.generics import (
     RetrieveAPIView,
     get_object_or_404,
 )
+from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet, ModelViewSet
 
 from aws_environments.constants import InfraStatus
 from aws_environments.jobs import create_environment_infra, create_project_infra
@@ -68,9 +70,9 @@ class ExecutionLogDetailsView(RetrieveAPIView):
         return ExecutionLog.objects.filter(organization=self.request.user.organization)
 
 
-class CreateProject(CreateAPIView):
+class CreateListProject(ModelViewSet):
     serializer_class = ProjectSerializer
-    lookup_url_kwarg = "slug"
+    lookup_url_kwarg = "env_slug"
     lookup_field = "slug"
 
     def get_queryset(self):
@@ -78,7 +80,7 @@ class CreateProject(CreateAPIView):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        env = get_object_or_404(self.get_queryset(), slug=kwargs["env_slug"])
+        env = self.get_object()
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -106,4 +108,13 @@ class CreateProject(CreateAPIView):
                 log=exec_log.slug,
             ),
             status=status.HTTP_201_CREATED,
+        )
+
+    def list(self, request, *args, **kwargs):
+        env = self.get_object()
+        return Response(
+            data=self.get_serializer_class()(
+                instance=env.projects.all(), many=True
+            ).data,
+            status=status.HTTP_200_OK,
         )

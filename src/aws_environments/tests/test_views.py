@@ -5,7 +5,8 @@ from rest_framework.test import APITestCase
 
 from aws_environments.constants import InfraStatus
 from aws_environments.models import Environment, ExecutionLog, Project, ProjectStatus
-from aws_environments.tests.factories import EnvironmentFactory
+from aws_environments.tests.factories import EnvironmentFactory, ProjectFactory
+from organizations.tests.factories import OrganizationFactory
 from users.tests.factories import UserFactory
 
 
@@ -87,13 +88,13 @@ class ListEnvTestCase(APITestCase):
         self.assertEqual(resp.json()[0]["name"], env.name)
 
 
-class CreateProjectTestCase(APITestCase):
+class CreateListProjectTestCase(APITestCase):
     def setUp(self) -> None:
         self.user = UserFactory()
         self.env = EnvironmentFactory(organization=self.user.organization)
         self.env.set_status(InfraStatus.ready, None)
         self.client.login(username=self.user.email, password="Aa123ewq!")
-        self.url = reverse("api:aws_env:create_project", args=(self.env.slug,))
+        self.url = reverse("api:aws_env:projects", args=(self.env.slug,))
 
     def test_happy_flow(self):
         self.assertEqual(Project.objects.count(), 0)
@@ -109,3 +110,37 @@ class CreateProjectTestCase(APITestCase):
             project.last_status.status, resp.json()["project"]["last_status"]["status"]
         )
         self.assertEqual(project.last_status.status, InfraStatus.changes_pending)
+
+    def test_non_existent_env(self):
+        self.assertEqual(Project.objects.count(), 0)
+
+        payload = dict(name="foofie")
+        resp = self.client.post(
+            reverse("api:aws_env:projects", args=("foofie",)), payload, format="json"
+        )
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(Project.objects.count(), 0)
+
+    def test_empty_list(self):
+        url = reverse("api:aws_env:projects", args=(self.env.slug,))
+
+        self.assertEqual(Project.objects.count(), 0)
+        resp = self.client.get(url, format="json")
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()), 0)
+
+    def test_cannot_view_not_your_projects(self):
+        org2 = OrganizationFactory(name="foofie")
+        user2 = UserFactory(
+            email="foofie@test.com", username="foofie@test.com", organization=org2
+        )
+        self.assertNotEqual(user2.organization, self.user.organization)
+
+        env2 = EnvironmentFactory(organization=user2.organization)
+        ProjectFactory(organization=user2.organization, environment=env2)
+
+        url = reverse("api:aws_env:projects", args=(env2.slug,))
+        resp = self.client.get(url, format="json")
+        print(resp.json())
+        self.assertEqual(resp.status_code, 404)

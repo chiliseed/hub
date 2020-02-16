@@ -58,7 +58,10 @@ class EnvironmentList(ListAPIView):
     serializer_class = EnvironmentSerializer
 
     def get_queryset(self):
-        return Environment.objects.filter(organization=self.request.user.organization)
+        params = dict(organization=self.request.user.organization)
+        if self.request.query_params.get("name"):
+            params["name__iexact"] = self.request.query_params['name']
+        return Environment.objects.filter(**params)
 
 
 class ExecutionLogDetailsView(RetrieveAPIView):

@@ -179,3 +179,23 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_URLS_REGEX = r"^/api/.*$"
 
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"  # Default
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+        "apscheduler": {
+            'handlers': ['console'],
+            'level': "DEBUG",
+        }
+    },
+}

@@ -399,6 +399,8 @@ class ExecutionLog(BaseModel):
     def get_component_obj(self):
         if self.component == self.Components.environment:
             return Environment.objects.get(id=self.component_id)
+        if self.component == self.Components.project:
+            return Project.objects.get(id=self.component_id)
         return None
 
     def mark_result(self, is_success):

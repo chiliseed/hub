@@ -12,7 +12,7 @@ from rest_framework.viewsets import ViewSet, ModelViewSet
 
 from aws_environments.constants import InfraStatus
 from aws_environments.jobs import create_environment_infra, create_project_infra
-from aws_environments.models import Environment, ExecutionLog
+from aws_environments.models import Environment, ExecutionLog, Project
 from aws_environments.serializers import (
     CreateEnvironmentSerializer,
     EnvironmentSerializer,
@@ -45,7 +45,7 @@ class EnvironmentCreate(CreateAPIView):
         )
 
         scheduler.add_job(
-            create_environment_infra, args=(env.id, exec_log.id), trigger=None
+            create_environment_infra, args=(env.id, exec_log.id), trigger=None, name="create_environment_infra"
         )
 
         return Response(
@@ -102,7 +102,7 @@ class CreateListProject(ModelViewSet):
         )
 
         scheduler.add_job(
-            create_project_infra, args=(project.id, exec_log.id), trigger=None
+            create_project_infra, args=(project.id, exec_log.id), name="create_project_infra"
         )
 
         return Response(
@@ -115,9 +115,12 @@ class CreateListProject(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         env = self.get_object()
+        params = dict(environment=env)
+        if request.query_params.get("name"):
+            params["name__iexact"] = self.request.query_params['name']
         return Response(
             data=self.get_serializer_class()(
-                instance=env.projects.all(), many=True
+                instance=Project.objects.filter(**params), many=True
             ).data,
             status=status.HTTP_200_OK,
         )

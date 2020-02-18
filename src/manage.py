@@ -6,7 +6,7 @@ import sys
 
 def main():
     """Execute django commands."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "control_center.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "control_center.settings.dev")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

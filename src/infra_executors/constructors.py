@@ -1,6 +1,10 @@
 """Methods that construct objects from input."""
 import json
+import logging
 from typing import Mapping, NamedTuple, Optional, TYPE_CHECKING, Type
+
+
+logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
@@ -53,7 +57,7 @@ def build_env_vars(
 
             env_vars[f"TF_VAR_{key}"] = formatted_val
 
-    print("env vars: ", env_vars)
+    logger.debug("env vars: %s", env_vars)
     return env_vars
 
 

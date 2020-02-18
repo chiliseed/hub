@@ -1,17 +1,28 @@
 import os
-import atexit
+from logging.config import dictConfig
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from django_apscheduler.jobstores import DjangoJobStore, register_events
+from celery import Celery
+from celery.signals import setup_logging
+import django
+from django.conf import settings
 
-scheduler = BackgroundScheduler()
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "control_center.settings.dev")
+django.setup()
 
-if not "PYTEST_CURRENT_TEST" in os.environ:
+app = Celery("chiliseed")
+# Using a string here means the worker doesn't have to serialize
+# the configuration object to child processes.
+# - namespace='CELERY' means all celery-related configuration keys
+#   should have a `CELERY_` prefix.
+app.config_from_object("django.conf:settings", namespace="CELERY")
 
-    scheduler.add_jobstore(DjangoJobStore(), "default")
-    register_events(scheduler)
 
-    scheduler.start()
-    print("Scheduler started")
+@setup_logging.connect
+def config_loggers(*args, **kwags):  # noqa
+    dictConfig(settings.LOGGING)
 
-    atexit.register(lambda: scheduler.shutdown(wait=False))
+
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+
+app.conf.beat_schedule = {
+}

@@ -3,6 +3,8 @@ FROM python:3.8.1-slim-buster
 LABEL maintainer="Chiliseed LTD"
 
 ARG requirements=requirements/dev.txt
+ENV PATH=$PATH:/app
+ENV PYTHONPATH=$PYTHONPATH:/app
 
 RUN mkdir /app
 RUN mkdir -p ~/.terraform.d/plugins/linux_amd64
@@ -38,6 +40,6 @@ COPY requirements requirements
 
 RUN pip install -r ${requirements}
 
-COPY src /app
+COPY src/ /app
 
 EXPOSE 8000

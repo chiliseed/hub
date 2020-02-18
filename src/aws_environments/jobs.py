@@ -1,5 +1,7 @@
 import logging
 
+from celery import shared_task
+
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
 from infra_executors.route53 import Route53Configuration
@@ -9,6 +11,7 @@ from .models import Environment, EnvironmentConf, ExecutionLog, Project, Project
 logger = logging.getLogger(__name__)
 
 
+@shared_task
 def create_environment_infra(env_id, exec_log_id):
     logger.info("Creating environment_id=%d, exec_log_id=%d", env_id, exec_log_id)
 
@@ -60,6 +63,7 @@ def create_environment_infra(env_id, exec_log_id):
         return False
 
 
+@shared_task
 def create_project_infra(project_id, exec_log_id):
     logger.info(
         "Creating project environment for project_id=%s exec_log_id=%s",

@@ -2,7 +2,7 @@ version: "3.7"
 services:
 
   db:
-    image: postgres:11.2
+    image: postgres:11.5
     restart: always
     container_name: chiliseed_db
     hostname: postgres
@@ -15,6 +15,19 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - chiliseed
+
+  rabbitmq:
+    image: rabbitmq:3.8.2-management
+    restart: always
+    container_name: chiliseed_queue
+    hostname: chiliseed-rabbit
+    ports:
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     networks:
       - chiliseed
 
@@ -32,6 +45,27 @@ services:
       - .env
     ports:
       - "8000:8000"
+    links:
+      - db
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app
+    networks:
+      - chiliseed
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        requirements: requirements/dev.txt
+    image: chiliseed/scheduler:latest
+    container_name: chiliseed_scheduler
+    restart: always
+    command: bash /app/scheduler_runner.sh
+    env_file:
+      - .env
     links:
       - db
     depends_on:

@@ -4,11 +4,9 @@ from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
     RetrieveAPIView,
-    get_object_or_404,
 )
-from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet, ModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
 from aws_environments.constants import InfraStatus
 from aws_environments.jobs import create_environment_infra, create_project_infra
@@ -19,7 +17,6 @@ from aws_environments.serializers import (
     ExecutionLogSerializer,
     ProjectSerializer,
 )
-from control_center.scheduler import scheduler
 
 
 class EnvironmentCreate(CreateAPIView):
@@ -44,9 +41,7 @@ class EnvironmentCreate(CreateAPIView):
             env.id,
         )
 
-        scheduler.add_job(
-            create_environment_infra, args=(env.id, exec_log.id), trigger=None, name="create_environment_infra"
-        )
+        create_environment_infra.delay(env.id, exec_log.id)
 
         return Response(
             dict(env=EnvironmentSerializer(env).data, log=exec_log.slug),
@@ -101,9 +96,7 @@ class CreateListProject(ModelViewSet):
             project.id,
         )
 
-        scheduler.add_job(
-            create_project_infra, args=(project.id, exec_log.id), name="create_project_infra"
-        )
+        create_project_infra.delay(project.id, exec_log.id)
 
         return Response(
             dict(

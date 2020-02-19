@@ -71,7 +71,7 @@ def launch_project_infra(
 
     logger.info("Creating alb.")
     alb_conf = ALBConfigs(
-        alb_name=f"{common_conf.project_name}-{common_conf.env_name}", open_ports=[],
+        alb_name=f"{common_conf.project_name}-{common_conf.env_name}-{common_conf.env_slug}", open_ports=[],
     )
     alb = create_alb(creds, common_conf, alb_conf)
     logger.info(
@@ -80,13 +80,13 @@ def launch_project_infra(
 
     logger.info("Launching ECS cluster")
     ecs_conf = ECSConfigs(
-        cluster=f"{common_conf.project_name}-{common_conf.env_name}",
-        instance_group_name=f"{common_conf.project_name}-{common_conf.env_name}",
-        cloudwatch_prefix=f"{common_conf.project_name}-{common_conf.env_name}",
+        cluster=f"{common_conf.project_name}-{common_conf.env_slug}",
+        instance_group_name=f"{common_conf.project_name}-{common_conf.env_slug}",
+        cloudwatch_prefix=f"{common_conf.project_name}-{common_conf.env_slug}",
     )
     ecs = create_ecs_cluster(creds, common_conf, ecs_conf)
     logger.info("Created ECS cluster %s", ecs["cluster"])
-    return alb, ecs_conf
+    return alb, ecs
 
 
 def create_environment(

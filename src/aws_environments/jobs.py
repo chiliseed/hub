@@ -1,6 +1,5 @@
-import logging
-
 from celery import shared_task
+from celery.utils.log import get_task_logger
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
@@ -8,7 +7,7 @@ from infra_executors.route53 import Route53Configuration
 from .constants import InfraStatus
 from .models import Environment, EnvironmentConf, ExecutionLog, Project, ProjectConf
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 @shared_task

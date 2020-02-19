@@ -142,7 +142,7 @@ class TerraformExecutor:
 
         if plan_return_code == 1 or plan_return_code < 0:
             logger.error("Error executing %s plan", self.executor_configs.name)
-            return False
+            raise TerraformExecutorError("Error preparing a plan")
         return True
 
     def apply_plan(self) -> Any:
@@ -153,7 +153,7 @@ class TerraformExecutor:
         )
         if apply_return_code != 0:
             logger.error("Failed to apply a plan %s", self.plan_file)
-            return {}
+            raise TerraformExecutorError("Failed to apply a plan")
 
         logger.info(
             "Successfully applied a plan. run_id=%s", self.general_configs.run_id,
@@ -163,15 +163,11 @@ class TerraformExecutor:
 
     def execute_apply(self) -> Any:
         """Run terraform execution."""
-        try:
-            self.init_terraform()
-            has_changes = self.prepare_plan()
-            if has_changes:
-                return self.apply_plan()
-            return self._get_outputs()
-        except TerraformExecutorError:
-            logger.error("failed to execute terraform configs")
-        return {}
+        self.init_terraform()
+        has_changes = self.prepare_plan()
+        if has_changes:
+            return self.apply_plan()
+        return self._get_outputs()
 
     def get_outputs(self) -> Any:
         """Run init and then get outputs."""
@@ -179,6 +175,7 @@ class TerraformExecutor:
             self.init_terraform()
             return self._get_outputs()
         except TerraformExecutorError:
+            logger.exception("Failed to get outputs")
             return {}
 
     def _get_outputs(self) -> Any:
@@ -190,7 +187,7 @@ class TerraformExecutor:
                 return {}
             return json.loads(stdout)
         except TerraformExecutorError:
-            logger.error("failed to execute terraform configs")
+            logger.exception("failed to execute terraform configs")
         return {}
 
     def execute_destroy(self) -> None:

@@ -205,6 +205,12 @@ LOGGING = {
             'formatter': "verbose",
             'propagate': True,
         },
+        "aws_environments": {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+            'formatter': "verbose",
+            'propagate': True,
+        },
     },
 }
 

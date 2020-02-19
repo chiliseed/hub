@@ -72,6 +72,11 @@ def create_ssh_key(name: str, aws_creds: AwsCredentials) -> str:
     str
         local path to pem key
     """
+    pem_key_path = os.path.join(KEYS_DIR, f"{name}.pem")
+    if os.path.exists(pem_key_path):
+        logger.info("Pem key %s is in our system", name)
+        return name
+
     ec2_client = get_boto3_client("ec2", aws_creds)
     key_pair = ec2_client.create_key_pair(KeyName=name)
 
@@ -84,7 +89,7 @@ def create_ssh_key(name: str, aws_creds: AwsCredentials) -> str:
     with open(key_pair_path, "w") as key_file:
         key_file.write(key_pair["KeyMaterial"])
 
-    return key_pair_path
+    return name
 
 
 def create_ecs_cluster(
@@ -96,7 +101,7 @@ def create_ecs_cluster(
         logger.info("Creating new ssh key-pair. run_id=%s", params.run_id)
         ecs_conf = ecs_conf._replace(
             ssh_key_name=create_ssh_key(
-                f"{params.project_name}_{params.env_name}", creds
+                f"{params.project_name}_{params.env_name}_{params.env_slug}", creds
             )
         )
     if not ecs_conf.ecs_aws_ami:

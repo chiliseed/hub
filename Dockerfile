@@ -42,4 +42,8 @@ RUN pip install -r ${requirements}
 
 COPY src/ /app
 
+VOLUME ["./src/infra_executors/terraform_plans"]
+VOLUME ["./src/infra_executors/exec_logs"]
+VOLUME ["./src/infra_executors/key_pairs"]
+
 EXPOSE 8000

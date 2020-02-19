@@ -51,7 +51,8 @@ def execute_shell_command(
         if log_to:
             with open(log_to, "ab") as logfile:
                 for line in process.stdout:
-                    logfile.write(line)
+                    if line.strip() != "":
+                        logfile.write(line)
                     logger.info(line.decode())
                     stdout += line.decode()
         else:
@@ -62,40 +63,6 @@ def execute_shell_command(
         process.poll()
 
     return process.returncode, stdout
-
-
-def extract_outputs(log_file_path: str) -> Mapping[str, str]:
-    """Extract terraform outputs as python objects.
-
-    Parameters
-    ----------
-    log_file_path : str
-        path to run log for processing
-
-    Returns
-    -------
-    outputs : dict
-        key values of extracted terraform outputs
-    """
-    output_lines = []
-
-    with open(log_file_path, "r") as log_file:
-        for line in reversed(log_file.readlines()):
-            if "Outputs:" in line:
-                break
-            if not line.strip():
-                continue
-            output_lines.append(line)
-    outputs_joined = "".join(reversed(output_lines)).strip()
-    # remove all '\n   '
-    clean_output1 = re.sub(r"[\n]\s+", "", outputs_joined)
-    # replace all ',\n]' with ']'
-    clean_output2 = re.sub(r",[\n]]", "]", clean_output1)
-    outputs = {}
-    for clean_line in clean_output2.splitlines():
-        key, value = clean_line.split("=")
-        outputs[key.strip()] = value.strip()
-    return outputs
 
 
 def get_session(region: str) -> boto3.session.Session:

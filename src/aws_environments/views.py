@@ -79,6 +79,8 @@ class CreateListProject(ModelViewSet):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         env = self.get_object()
+        if not env.is_ready():
+            return Response(data={"detail": "Environment is not in ready state."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -135,6 +137,8 @@ class CreateListServices(ModelViewSet):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         project = self.get_object()
+        if not project.is_ready():
+            return Response(data={"detail": "Project is not in ready state"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -14,11 +14,6 @@ from common.models import BaseModel
 from infra_executors.alb import HTTP, ALBConfigs, OpenPort
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecr import ECRConfigs
-from infra_executors.ecs_service import (
-    create_acm_for_service,
-    launch_infa_for_service,
-    ServiceConfiguration,
-)
 from infra_executors.route53 import Route53Configuration, CnameSubDomain
 
 
@@ -102,6 +97,9 @@ class Environment(BaseModel):
     def set_conf(self, conf: EnvironmentConf):
         self.configuration = conf.to_str()
         self.save(update_fields=["configuration"])
+
+    def is_ready(self):
+        return self.last_status.status == InfraStatus.ready
 
     def get_creds(self) -> AwsCredentials:
         conf = self.conf()
@@ -190,6 +188,12 @@ class Project(BaseModel):
 
     class Meta:
         unique_together = ["environment_id", "name"]
+
+    def __str__(self):
+        return f"#{self.id} | Env: {self.environment.name} | Name: {self.name}"
+
+    def is_ready(self):
+        return self.environment.is_ready() and self.last_status.status == InfraStatus.ready
 
     def set_conf(self, conf: ProjectConf):
         self.configuration = conf.to_str()

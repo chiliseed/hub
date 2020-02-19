@@ -9,14 +9,14 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from aws_environments.constants import InfraStatus
-from aws_environments.jobs import create_environment_infra, create_project_infra
-from aws_environments.models import Environment, ExecutionLog, Project
+from aws_environments.jobs import create_environment_infra, create_project_infra, create_service_infra
+from aws_environments.models import Environment, ExecutionLog, Project, Service
 from aws_environments.serializers import (
     CreateEnvironmentSerializer,
     EnvironmentSerializer,
     ExecutionLogSerializer,
     ProjectSerializer,
-)
+    ServiceSerializer)
 
 
 class EnvironmentCreate(CreateAPIView):
@@ -114,6 +114,58 @@ class CreateListProject(ModelViewSet):
         return Response(
             data=self.get_serializer_class()(
                 instance=Project.objects.filter(**params), many=True
+            ).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class CreateListServices(ModelViewSet):
+    serializer_class = ServiceSerializer
+    lookup_url_kwarg = "project_slug"
+    lookup_field = "slug"
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["user"] = self.request.user
+        return ctx
+
+    def get_queryset(self):
+        return Project.objects.filter(organization=self.request.user.organization)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        project = self.get_object()
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        service = serializer.save(project=project)
+
+        exec_log = ExecutionLog.register(
+            self.request.user.organization,
+            ExecutionLog.ActionTypes.create,
+            request.data,
+            ExecutionLog.Components.service,
+            service.id,
+        )
+
+        create_service_infra.delay(service.id, exec_log.id)
+
+        return Response(
+            dict(
+                service=self.get_serializer_class()(instance=service).data,
+                log=exec_log.slug,
+            ),
+            status=status.HTTP_201_CREATED,
+        )
+
+    def list(self, request, *args, **kwargs):
+        params = dict(project=self.get_object())
+        if request.query_params.get("name"):
+            params["name__iexact"] = self.request.query_params['name']
+        return Response(
+            data=self.get_serializer_class()(
+                instance=Service.objects.filter(**params), many=True
             ).data,
             status=status.HTTP_200_OK,
         )

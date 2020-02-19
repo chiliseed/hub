@@ -1,5 +1,5 @@
 import argparse
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 from infra_executors.acm import create_acm, SSLConfigs, destroy_acm
 from infra_executors.alb import ALBConfigs, create_alb, OpenPort, HTTP
@@ -103,73 +103,73 @@ def destroy_service_infra(
     logger.info("Removed ACM")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create/destroy ecs service.")
-    parser.add_argument(
-        "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
-    )
-    parser.add_argument(
-        "project_name", type=str, help="The name of your project. Example: demo",
-    )
-    parser.add_argument(
-        "environment",
-        type=str,
-        default="develop",
-        help="The name of your environment. Example: dev",
-    )
-    parser.add_argument(
-        "service_name",
-        type=str,
-        help="The name of the service to launch. Example: api",
-    )
-
-    parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
-    parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")
-    parser.add_argument(
-        "--aws-region", type=str, default="us-east-2", dest="aws_region"
-    )
-    parser.add_argument("--run-id", type=str, default=1, dest="run_id")
-
-    args = parser.parse_args()
-
-    aws_creds = AwsCredentials(
-        args.aws_access_key, args.aws_secret_key, "", args.aws_region
-    )
-    common = GeneralConfiguration(args.project_name, args.environment, args.run_id, "")
-    cmd_conf = ServiceConfiguration(args.service_name, "demo-api")
-
-    if args.cmd == "create":
-        r53_conf = Route53Configuration(domain="chiliseed.com", cname_subdomains=[])
-        acm_arn = create_acm_for_service(
-            aws_creds, common, r53_conf, cmd_conf.subdomain
-        )
-        ecr_conf = ECRConfigs(repositories=[f"{common.project_name}/{cmd_conf.name}"])
-
-        launch_infa_for_service(
-            aws_creds,
-            common,
-            cmd_conf,
-            r53_conf,
-            ALBConfigs(
-                alb_name=f"{common.project_name}-{common.env_name}",
-                open_ports=[
-                    OpenPort(
-                        name=args.service_name,
-                        container_port=7878,
-                        alb_port_http=80,
-                        alb_port_https=443,
-                        health_check_endpoint="/health/check",
-                        health_check_protocol=HTTP,
-                        ssl_certificate_arn=acm_arn,
-                    )
-                ],
-            ),
-            ecr_conf,
-        )
-    if args.cmd == "destroy":
-        destroy_service_infra(
-            aws_creds,
-            common,
-            cmd_conf,
-            Route53Configuration(domain="chiliseed.com", cname_subdomains=[]),
-        )
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(description="Create/destroy ecs service.")
+#     parser.add_argument(
+#         "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
+#     )
+#     parser.add_argument(
+#         "project_name", type=str, help="The name of your project. Example: demo",
+#     )
+#     parser.add_argument(
+#         "environment",
+#         type=str,
+#         default="develop",
+#         help="The name of your environment. Example: dev",
+#     )
+#     parser.add_argument(
+#         "service_name",
+#         type=str,
+#         help="The name of the service to launch. Example: api",
+#     )
+#
+#     parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
+#     parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")
+#     parser.add_argument(
+#         "--aws-region", type=str, default="us-east-2", dest="aws_region"
+#     )
+#     parser.add_argument("--run-id", type=str, default=1, dest="run_id")
+#
+#     args = parser.parse_args()
+#
+#     aws_creds = AwsCredentials(
+#         args.aws_access_key, args.aws_secret_key, "", args.aws_region
+#     )
+#     common = GeneralConfiguration(args.project_name, args.environment, args.run_id, "")
+#     cmd_conf = ServiceConfiguration(args.service_name, "demo-api")
+#
+#     if args.cmd == "create":
+#         r53_conf = Route53Configuration(domain="chiliseed.com", cname_subdomains=[])
+#         acm_arn = create_acm_for_service(
+#             aws_creds, common, r53_conf, cmd_conf.subdomain
+#         )
+#         ecr_conf = ECRConfigs(repositories=[f"{common.project_name}/{cmd_conf.name}"])
+#
+#         launch_infa_for_service(
+#             aws_creds,
+#             common,
+#             cmd_conf,
+#             r53_conf,
+#             ALBConfigs(
+#                 alb_name=f"{common.project_name}-{common.env_name}",
+#                 open_ports=[
+#                     OpenPort(
+#                         name=args.service_name,
+#                         container_port=7878,
+#                         alb_port_http=80,
+#                         alb_port_https=443,
+#                         health_check_endpoint="/health/check",
+#                         health_check_protocol=HTTP,
+#                         ssl_certificate_arn=acm_arn,
+#                     )
+#                 ],
+#             ),
+#             ecr_conf,
+#         )
+#     if args.cmd == "destroy":
+#         destroy_service_infra(
+#             aws_creds,
+#             common,
+#             cmd_conf,
+#             Route53Configuration(domain="chiliseed.com", cname_subdomains=[]),
+#         )

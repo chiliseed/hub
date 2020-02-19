@@ -1,12 +1,13 @@
 from rest_framework import serializers
 
+from aws_environments.constants import InfraStatus
 from aws_environments.models import (
     Environment,
     ExecutionLog,
     EnvStatus,
     Project,
     ProjectStatus,
-)
+    Service, ServiceConf)
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):
@@ -92,3 +93,30 @@ class ProjectSerializer(serializers.ModelSerializer):
             "last_status",
         )
         read_only_fields = ("slug",)
+
+
+class ServiceSerializer(serializers.ModelSerializer):
+    container_port = serializers.IntegerField(required=True)
+    alb_port_http = serializers.IntegerField(required=True)
+    alb_port_https = serializers.IntegerField(required=True)
+    health_check_endpoint = serializers.CharField(max_length=100, required=True)
+
+    class Meta:
+        model = Service
+        fields = ("slug", "name", "subdomain")
+        read_only_fields = ("slug", )
+
+    def create(self, validated_data):
+        payload = {**validated_data}
+        payload["configuration"] = ServiceConf(
+            acm_arn="",
+            container_port=payload["container_port"],
+            alb_port_http=payload["alb_port_http"],
+            alb_port_https=payload["alb_port_https"],
+            health_check_endpoint=payload["health_check_endpoint"],
+            health_check_protocol="",
+            ecr_repo_name="",
+        )
+        service = super().create(payload)
+        service.set_status(InfraStatus.changes_pending, self.context["user"])
+        return service

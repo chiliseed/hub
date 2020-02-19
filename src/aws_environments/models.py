@@ -142,7 +142,7 @@ class ProjectConf:
 
 
 class ProjectStatus(BaseModel):
-
+    """Track the status of the project infrastructure."""
     project = models.ForeignKey(
         "Project", on_delete=models.CASCADE, related_name="statuses"
     )
@@ -258,7 +258,8 @@ class Project(BaseModel):
         return ECRConfigs(repositories=repos)
 
 
-class ServiceConf(NamedTuple):
+@dataclass
+class ServiceConf:
     acm_arn: str
     container_port: int
     alb_port_http: int
@@ -266,6 +267,22 @@ class ServiceConf(NamedTuple):
     health_check_endpoint: str
     health_check_protocol: str
     ecr_repo_name: str
+
+    def to_str(self):
+        return json.dumps(asdict(self))
+
+
+class ServiceStatus(BaseModel):
+    service = models.ForeignKey(
+        "Service", on_delete=models.CASCADE, related_name="statuses"
+    )
+    status = models.CharField(max_length=30, choices=InfraStatus.choices)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    def __str__(self):
+        return f"Environment #{self.service.id} | Status {self.status}"
 
 
 class Service(BaseModel):
@@ -296,49 +313,29 @@ class Service(BaseModel):
     subdomain = models.CharField(max_length=50, null=False, blank=False)
     configuration = EncryptedTextField(default="{}")
 
+    class Meta:
+        unique_together = ["name", "project_id"]
+
     @property
     def conf(self) -> ServiceConf:
         return ServiceConf(**json.loads(self.configuration))
 
-    def set_configuration(self, service_conf):
-        self.configuration = json.dumps(service_conf._asdict())
+    def set_conf(self, service_conf: ServiceConf):
+        self.configuration = service_conf.to_str()
+        self.save(update_fields=["configuration"])
 
-    @classmethod
-    def create_new(cls, execution_log, project, name, subdomain):
+    def set_status(self, status, actor=None):
+        """Change status of service infra."""
+        assert status in InfraStatus.values, "Unknown status"
+        if actor:
+            assert (
+                actor.organization == self.project.organization
+            ), "Actor is from another organization"
 
-        creds = project.environment.get_creds()
-        common_conf = project.get_common_conf(execution_log.slug)
-        r53_conf = project.get_r53_conf()
-
-        acm_arn = create_acm_for_service(creds, common_conf, r53_conf, subdomain)
-
-        service_conf = ServiceConfiguration(name=name, subdomain=subdomain)
-
-        alb_conf = project.get_alb_conf()
-        ecr_conf = project.get_ecr_conf()
-        ecr_repo_name = f"{project.name}/{name}"
-        ecr_conf = ecr_conf._replace(
-            repositories=ecr_conf.repositories + [ecr_repo_name]
-        )
-
-        launch_infa_for_service(
-            creds, common_conf, service_conf, r53_conf, alb_conf, ecr_conf
-        )
-
-        service = Service(project=project, name=name, subdomain=subdomain,)
-        service.set_configuration(
-            ServiceConf(
-                acm_arn=acm_arn,
-                container_port=execution_log.params["container_port"],
-                alb_port_http=execution_log.params["alb_port_http"],
-                alb_port_https=execution_log.params["alb_port_https"],
-                health_check_endpoint=execution_log.params["health_check_endpoint"],
-                health_check_protocol=HTTP,
-                ecr_repo_name=ecr_repo_name,
-            )
-        )
-        service.save()
-        return service
+        status = ServiceStatus(status=status, created_by=actor, project=self)
+        status.save()
+        self.last_status = self.statuses.all().order_by("created_at").last()
+        self.save(update_fields=["last_status"])
 
 
 class ExecutionLog(BaseModel):

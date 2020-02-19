@@ -1,11 +1,13 @@
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
+from infra_executors.alb import HTTP
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
+from infra_executors.ecs_service import create_acm_for_service, ServiceConfiguration, launch_infa_for_service
 from infra_executors.route53 import Route53Configuration
 from .constants import InfraStatus
-from .models import Environment, EnvironmentConf, ExecutionLog, Project, ProjectConf
+from .models import Environment, EnvironmentConf, ExecutionLog, Project, ProjectConf, Service, ServiceConf
 
 logger = get_task_logger(__name__)
 
@@ -75,21 +77,8 @@ def create_project_infra(project_id, exec_log_id):
 
     try:
 
-        env_conf = project.environment.conf()
-        creds = AwsCredentials(
-            access_key=env_conf.access_key_id,
-            secret_key=env_conf.access_key_secret,
-            region=project.environment.region,
-            session_key="",
-        )
-
-        common = GeneralConfiguration(
-            env_slug=project.environment.slug,
-            project_name=project.name,
-            env_name=project.environment.name,
-            run_id=exec_log.id,
-            vpc_id=env_conf.vpc_id,
-        )
+        creds = project.environment.get_creds()
+        common = project.get_common_conf(exec_log.slug)
 
         alb, ecs_cluster = launch_project_infra(creds, common)
 
@@ -118,5 +107,69 @@ def create_project_infra(project_id, exec_log_id):
         )
 
         project.set_status(InfraStatus.error)
+        exec_log.mark_result(False)
+        return False
+
+
+@shared_task
+def create_service_infra(service_id, exec_log_id):
+    logger.info(
+        "Creating service environment for service_id=%s exec_log_id=%s",
+        service_id,
+        exec_log_id,
+    )
+
+    service = Service.objects.select_related("project", "project__environment").get(id=service_id)
+    exec_log = ExecutionLog.objects.get(id=exec_log_id)
+
+    try:
+        creds = service.project.environment.get_creds()
+        common_conf = service.project.get_common_conf(exec_log.slug)
+        r53_conf = service.project.get_r53_conf()
+
+        acm_arn = create_acm_for_service(creds, common_conf, r53_conf, service.subdomain)
+
+        service_conf = ServiceConfiguration(name=service.name, subdomain=service.subdomain)
+
+        alb_conf = service.project.get_alb_conf()
+        ecr_conf = service.project.get_ecr_conf()
+        ecr_repo_name = f"{service.project.name}/{service.name}"
+        ecr_conf = ecr_conf._replace(
+            repositories=ecr_conf.repositories + [ecr_repo_name]
+        )
+
+        launch_infa_for_service(
+            creds, common_conf, service_conf, r53_conf, alb_conf, ecr_conf
+        )
+
+        service.set_conf(
+            ServiceConf(
+                acm_arn=acm_arn,
+                container_port=exec_log.params["container_port"],
+                alb_port_http=exec_log.params["alb_port_http"],
+                alb_port_https=exec_log.params["alb_port_https"],
+                health_check_endpoint=exec_log.params["health_check_endpoint"],
+                health_check_protocol=HTTP,
+                ecr_repo_name=ecr_repo_name,
+            )
+        )
+        service.set_status(InfraStatus.ready)
+
+        exec_log.mark_result(True)
+
+        logger.info(
+            "Created service environment service_id=%s exec_log_id=%s",
+            service_id,
+            exec_log_id,
+        )
+        return True
+    except:
+        logger.exception(
+            "Failed to create project infra project_id=%s exec_log_id=%s",
+            service_id,
+            exec_log_id,
+        )
+
+        service.set_status(InfraStatus.error)
         exec_log.mark_result(False)
         return False

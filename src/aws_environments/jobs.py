@@ -4,10 +4,22 @@ from celery.utils.log import get_task_logger
 from infra_executors.alb import HTTP
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
-from infra_executors.ecs_service import create_acm_for_service, ServiceConfiguration, launch_infa_for_service
+from infra_executors.ecs_service import (
+    create_acm_for_service,
+    ServiceConfiguration,
+    launch_infa_for_service,
+    destroy_service_infra)
 from infra_executors.route53 import Route53Configuration
 from .constants import InfraStatus
-from .models import Environment, EnvironmentConf, ExecutionLog, Project, ProjectConf, Service, ServiceConf
+from .models import (
+    Environment,
+    EnvironmentConf,
+    ExecutionLog,
+    Project,
+    ProjectConf,
+    Service,
+    ServiceConf,
+)
 
 logger = get_task_logger(__name__)
 
@@ -27,9 +39,13 @@ def create_environment_infra(env_id, exec_log_id):
         session_key="",
     )
     common = GeneralConfiguration(
-        env_slug=env.slug,
-        project_name="environment",
+        organization_id=env.organization.id,
+        env_id=env.id,
+        project_id="",
+        service_id="",
         env_name=env.name,
+        env_slug=env.slug,
+        project_name="",
         run_id=exec_log.id,
         vpc_id="",
     )
@@ -119,50 +135,35 @@ def create_service_infra(service_id, exec_log_id):
         exec_log_id,
     )
 
-    service = Service.objects.select_related("project", "project__environment").get(id=service_id)
+    service = Service.objects.select_related("project", "project__environment").get(
+        id=service_id
+    )
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
 
+    creds = service.project.environment.get_creds()
+    common_conf = service.project.get_common_conf(exec_log_id, service_id)
+    r53_conf = service.project.get_r53_conf()
+
     try:
-        creds = service.project.environment.get_creds()
-        common_conf = service.project.get_common_conf(exec_log.slug)
-        r53_conf = service.project.get_r53_conf()
+        acm_arn = create_acm_for_service(
+            creds, common_conf, r53_conf, service.subdomain, service.project.environment.conf().r53_zone_id
+        )
 
-        acm_arn = create_acm_for_service(creds, common_conf, r53_conf, service.subdomain)
-
-        service_conf = ServiceConfiguration(name=service.name, subdomain=service.subdomain)
+        ecr_repo_name = f"{service.project.name}/{service.name}"
+        service.set_conf(ServiceConf(
+            acm_arn=acm_arn,
+            health_check_protocol=HTTP,
+            ecr_repo_name=f"{service.project.name}/{service.name}"
+        ))
 
         alb_conf = service.project.get_alb_conf()
         ecr_conf = service.project.get_ecr_conf()
-        ecr_repo_name = f"{service.project.name}/{service.name}"
-        ecr_conf = ecr_conf._replace(
-            repositories=ecr_conf.repositories + [ecr_repo_name]
+
+        infra = launch_infa_for_service(
+            creds, common_conf, r53_conf, alb_conf, ecr_conf,
         )
 
-        launch_infa_for_service(
-            creds, common_conf, service_conf, r53_conf, alb_conf, ecr_conf
-        )
-
-        service.set_conf(
-            ServiceConf(
-                acm_arn=acm_arn,
-                container_port=exec_log.params["container_port"],
-                alb_port_http=exec_log.params["alb_port_http"],
-                alb_port_https=exec_log.params["alb_port_https"],
-                health_check_endpoint=exec_log.params["health_check_endpoint"],
-                health_check_protocol=HTTP,
-                ecr_repo_name=ecr_repo_name,
-            )
-        )
-        service.set_status(InfraStatus.ready)
-
-        exec_log.mark_result(True)
-
-        logger.info(
-            "Created service environment service_id=%s exec_log_id=%s",
-            service_id,
-            exec_log_id,
-        )
-        return True
+        ecr_repo_url = [url for url in infra["ecr"]["repositories_urls"]["value"] if ecr_repo_name in url][0]
     except:
         logger.exception(
             "Failed to create project infra project_id=%s exec_log_id=%s",
@@ -173,3 +174,69 @@ def create_service_infra(service_id, exec_log_id):
         service.set_status(InfraStatus.error)
         exec_log.mark_result(False)
         return False
+
+    service.set_conf(
+        ServiceConf(
+            acm_arn=acm_arn,
+            health_check_protocol=HTTP,
+            ecr_repo_name=ecr_repo_name,
+            ecr_repo_url=ecr_repo_url,
+        )
+    )
+    service.set_status(InfraStatus.ready)
+
+    exec_log.mark_result(True)
+
+    logger.info(
+        "Created service environment service_id=%s exec_log_id=%s",
+        service_id,
+        exec_log_id,
+    )
+    return True
+
+
+@shared_task
+def remove_service_infra(service_id, exec_log_id):
+    logger.info(
+        "Removing service environment for service_id=%s exec_log_id=%s",
+        service_id,
+        exec_log_id,
+    )
+
+    service = Service.objects.select_related("project", "project__environment").get(
+        id=service_id
+    )
+    service.is_deleted = True
+    service.save(update_fields=["is_deleted"])
+
+    exec_log = ExecutionLog.objects.get(id=exec_log_id)
+
+    creds = service.project.environment.get_creds()
+    common_conf = service.project.get_common_conf(exec_log_id, service_id)
+    r53_conf = service.project.get_r53_conf()
+    alb_conf = service.project.get_alb_conf()
+    ecr_conf = service.project.get_ecr_conf()
+
+    try:
+        destroy_service_infra(
+            creds, common_conf, r53_conf, alb_conf, ecr_conf, service.project.environment.conf().r53_zone_id, service.subdomain
+        )
+    except:
+        logger.exception(
+            "Failed to update project infra project_id=%s exec_log_id=%s",
+            service_id,
+            exec_log_id,
+        )
+
+        service.set_status(InfraStatus.error)
+        exec_log.mark_result(False)
+        return False
+
+    exec_log.mark_result(True)
+
+    logger.info(
+        "Removed service environment service_id=%s exec_log_id=%s",
+        service_id,
+        exec_log_id,
+    )
+    return True

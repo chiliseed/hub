@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "rest_framework",
     "rest_framework.authtoken",
-    'django_celery_results',
+    "django_celery_results",
     "djoser",
     "users",
     "organizations",
@@ -179,43 +179,45 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_URLS_REGEX = r"^/api/.*$"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'formatter': "verbose",
-            'propagate': True,
+    "handlers": {"console": {"class": "logging.StreamHandler",},},
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+            "formatter": "verbose",
+            "propagate": True,
         },
         "infra_executors": {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
-            'formatter': "verbose",
-            'propagate': True,
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_LOG_LEVEL", "DEBUG"),
+            "formatter": "verbose",
+            "propagate": True,
         },
         "aws_environments": {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
-            'formatter': "verbose",
-            'propagate': True,
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_LOG_LEVEL", "DEBUG"),
+            "formatter": "verbose",
+            "propagate": True,
+        },
+        "celery": {
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_LOG_LEVEL", "DEBUG"),
+            "formatter": "verbose",
+            "propagate": True,
         },
     },
 }
 
 CELERY_BROKER_URL = f"amqp://{os.environ.get('RABBITMQ_USER')}:{os.environ.get('RABBITMQ_PASSWORD')}@{os.environ.get('RABBITMQ_HOST')}:5672/"
-CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_BACKEND = "django-db"
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"

@@ -1,4 +1,4 @@
-import argparse
+"""Manages environment global parts and project infra."""
 from typing import NamedTuple, Any, Dict
 
 from infra_executors.alb import create_alb, ALBConfigs, destroy_alb
@@ -71,7 +71,8 @@ def launch_project_infra(
 
     logger.info("Creating alb.")
     alb_conf = ALBConfigs(
-        alb_name=f"{common_conf.project_name}-{common_conf.env_name}-{common_conf.env_slug}", open_ports=[],
+        alb_name=f"{common_conf.project_name}-{common_conf.env_name}-{common_conf.env_slug}",
+        open_ports=[],
     )
     alb = create_alb(creds, common_conf, alb_conf)
     logger.info(
@@ -141,47 +142,3 @@ def destroy_environment(
         common_conf.project_name,
         common_conf.env_name,
     )
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Create/destroy ecs cluster in the provides vpc."
-    )
-    parser.add_argument(
-        "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
-    )
-    parser.add_argument(
-        "project_name", type=str, help="The name of your project. Example: chiliseed",
-    )
-    parser.add_argument(
-        "environment",
-        type=str,
-        default="develop",
-        help="The name of your environment. Example: develop",
-    )
-    parser.add_argument(
-        "domain", type=str, help="Domain name for the services. Example: example.com",
-    )
-
-    parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
-    parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")
-    parser.add_argument(
-        "--aws-region", type=str, default="us-east-2", dest="aws_region"
-    )
-    parser.add_argument("--run-id", type=str, default=1, dest="run_id")
-
-    args = parser.parse_args()
-
-    aws_creds = AwsCredentials(
-        args.aws_access_key, args.aws_secret_key, "", args.aws_region
-    )
-    common = GeneralConfiguration(args.project_name, args.environment, args.run_id, "")
-
-    cmd_configs = EnvConfigs(
-        domain=args.domain,
-        route53=Route53Configuration(domain=args.domain, cname_subdomains=[],),
-    )
-    if args.cmd == "create":
-        create_environment(aws_creds, common, cmd_configs)
-    if args.cmd == "destroy":
-        destroy_environment(aws_creds, common, cmd_configs)

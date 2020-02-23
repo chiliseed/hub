@@ -4,4 +4,4 @@
 # Django starts so that shared_task will use this app.
 from .scheduler import app as scheduler
 
-__all__ = ('scheduler',)
+__all__ = ("scheduler",)

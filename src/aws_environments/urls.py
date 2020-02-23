@@ -6,7 +6,8 @@ from aws_environments.views import (
     EnvironmentList,
     ExecutionLogDetailsView,
     CreateListProject,
-    CreateListServices)
+    CreateListServices,
+)
 
 app_name = "aws_env"
 urlpatterns = [
@@ -21,6 +22,11 @@ urlpatterns = [
         "project/<slug:project_slug>/services/",
         CreateListServices.as_view({"post": "create", "get": "list"}),
         name="services",
+    ),
+    path(
+        "project/<slug:project_slug>/services/can-create",
+        CreateListServices.as_view({"get": "can_create"}),
+        name="services_create_check",
     ),
     path(
         "execution/status/<slug:slug>",

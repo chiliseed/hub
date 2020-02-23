@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from aws_environments.models import Environment, Project, ExecutionLog
+from aws_environments.models import Environment, Project, ExecutionLog, Service
 
 
 class EnvironmentAdmin(admin.ModelAdmin):
@@ -20,10 +20,45 @@ class ProjectAdmin(admin.ModelAdmin):
         return obj.environment.name
 
 
+class ServiceAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "slug",
+        "name",
+        "subdomain",
+        "project",
+        "organization",
+        "status",
+    )
+    list_display_links = ("id", "project", "organization")
+    readonly_fields = ("slug", "id", )
+
+    def organization(self, obj):
+        return obj.project.organization
+
+    def status(self, obj):
+        return obj.last_status.status
+
+
 class ExecLogAdmin(admin.ModelAdmin):
-    list_display = ("id", "slug", "action", "is_success", "created_at", "ended_at", "component", "component_id", "env")
+    list_display = (
+        "id",
+        "slug",
+        "action",
+        "is_success",
+        "created_at",
+        "ended_at",
+        "component",
+        "component_id",
+        "env",
+    )
     list_filter = ("action", "is_success", "component")
-    search_fields = ("id", "slug", "component_id",)
+    search_fields = (
+        "id",
+        "slug",
+        "component_id",
+    )
+    readonly_fields = ("slug", "id",)
 
     def env(self, obj):
         component = obj.get_component_obj()
@@ -31,6 +66,8 @@ class ExecLogAdmin(admin.ModelAdmin):
             return ""
         if obj.component == obj.Components.environment:
             return component.name
+        elif obj.component == obj.Components.service:
+            return component.project.environment.name
         else:
             return component.environment.name
 
@@ -38,3 +75,4 @@ class ExecLogAdmin(admin.ModelAdmin):
 admin.site.register(Environment, EnvironmentAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(ExecutionLog, ExecLogAdmin)
+admin.site.register(Service, ServiceAdmin)

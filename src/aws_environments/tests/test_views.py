@@ -5,8 +5,18 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from aws_environments.constants import InfraStatus
-from aws_environments.models import Environment, ExecutionLog, Project, ProjectStatus, Service
-from aws_environments.tests.factories import EnvironmentFactory, ProjectFactory, ServiceFactory
+from aws_environments.models import (
+    Environment,
+    ExecutionLog,
+    Project,
+    ProjectStatus,
+    Service,
+)
+from aws_environments.tests.factories import (
+    EnvironmentFactory,
+    ProjectFactory,
+    ServiceFactory,
+)
 from organizations.tests.factories import OrganizationFactory
 from users.tests.factories import UserFactory
 
@@ -154,9 +164,11 @@ class CreateListServiceTestCase(APITestCase):
         self.user = UserFactory()
         self.env = EnvironmentFactory(organization=self.user.organization)
         self.env.set_status(InfraStatus.ready, None)
-        self.project = ProjectFactory(organization=self.user.organization, environment=self.env)
+        self.project = ProjectFactory(
+            organization=self.user.organization, environment=self.env
+        )
         self.client.login(username=self.user.email, password="Aa123ewq!")
-        self.url = reverse("api:aws_env:services", args=(self.project.slug, ))
+        self.url = reverse("api:aws_env:services", args=(self.project.slug,))
 
     def test_empty_list(self):
         self.assertEqual(Service.objects.count(), 0)
@@ -164,6 +176,8 @@ class CreateListServiceTestCase(APITestCase):
         resp = self.client.get(self.url, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 0)
+
+
 #
 #     def test_list(self):
 #         service = ServiceFactory(project=self.project)

@@ -3,7 +3,7 @@ import argparse
 from typing import Any, NamedTuple
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
-from infra_executors.constructors import build_state_key
+from infra_executors.constructors import build_project_state_key
 from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import (
     ExecutorConfiguration,
@@ -38,7 +38,7 @@ def create_postgresql(
             name="postgres",
             action="create",
             config_dir="postgres",
-            state_key=build_state_key(params, "postgres"),
+            state_key=build_project_state_key(params, "postgres"),
             variables_file_name="db.tfvars",
         ),
     )
@@ -58,7 +58,7 @@ def destroy_postgresql(
             name="postgres",
             action="destroy",
             config_dir="postgres",
-            state_key=build_state_key(params, "postgres"),
+            state_key=build_project_state_key(params, "postgres"),
             variables_file_name="db.tfvars",
         ),
     )

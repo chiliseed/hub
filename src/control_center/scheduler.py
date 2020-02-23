@@ -24,5 +24,4 @@ def config_loggers(*args, **kwags):  # noqa
 
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
-app.conf.beat_schedule = {
-}
+app.conf.beat_schedule = {}

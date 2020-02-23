@@ -61,7 +61,7 @@ def build_env_vars(
     return env_vars
 
 
-def build_state_key(
+def build_project_state_key(
     generic_configs: "GeneralConfiguration", component_name: str
 ) -> str:
     """Construct a state key in a unified way.
@@ -79,8 +79,58 @@ def build_state_key(
         s3 key path where the state will be saved
     """
     return (
-        f"{generic_configs.env_slug}/"
-        f"{generic_configs.project_name}/"
-        f"{generic_configs.env_name}/"
+        f"{generic_configs.organization_id}/"
+        f"environments/{generic_configs.env_id}/"
+        f"projects/{generic_configs.project_id}/"
+        f"{component_name}.tfstate"
+    )
+
+
+def build_service_state_key(
+    generic_configs: "GeneralConfiguration", component_name: str
+) -> str:
+    """Construct a state key in a unified way.
+
+    Parameters
+    ----------
+    generic_configs : infra_executors.constants.GeneralConfiguration
+        common configs for every terraform execution.
+    component_name : str
+        a name of the constructed component. i.e.: network or postgres
+
+    Returns
+    -------
+    state key : str
+        s3 key path where the state will be saved
+    """
+    return (
+        f"{generic_configs.organization_id}/"
+        f"environments/{generic_configs.env_id}/"
+        f"projects/{generic_configs.project_id}/"
+        f"services/{generic_configs.service_id}/"
+        f"{component_name}.tfstate"
+    )
+
+
+def build_environment_state_key(
+    generic_configs: "GeneralConfiguration", component_name: str
+) -> str:
+    """Construct a state key in a unified way.
+
+    Parameters
+    ----------
+    generic_configs : infra_executors.constants.GeneralConfiguration
+        common configs for every terraform execution.
+    component_name : str
+        a name of the constructed component. i.e.: network or postgres
+
+    Returns
+    -------
+    state key : str
+        s3 key path where the state will be saved
+    """
+    return (
+        f"{generic_configs.organization_id}/"
+        f"environments/{generic_configs.env_id}/"
         f"{component_name}.tfstate"
     )

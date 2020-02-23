@@ -7,7 +7,9 @@ from aws_environments.models import (
     EnvStatus,
     Project,
     ProjectStatus,
-    Service, ServiceConf)
+    Service,
+    ServiceConf,
+)
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):
@@ -103,20 +105,28 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = ("slug", "name", "subdomain")
-        read_only_fields = ("slug", )
+        fields = (
+            "slug",
+            "name",
+            "subdomain",
+            "container_port",
+            "alb_port_http",
+            "alb_port_https",
+            "health_check_endpoint",
+        )
+        read_only_fields = ("slug",)
 
     def create(self, validated_data):
         payload = {**validated_data}
         payload["configuration"] = ServiceConf(
             acm_arn="",
-            container_port=payload["container_port"],
-            alb_port_http=payload["alb_port_http"],
-            alb_port_https=payload["alb_port_https"],
-            health_check_endpoint=payload["health_check_endpoint"],
+            # container_port=payload["container_port"],
+            # alb_port_http=payload["alb_port_http"],
+            # alb_port_https=payload["alb_port_https"],
+            # health_check_endpoint=payload["health_check_endpoint"],
             health_check_protocol="",
             ecr_repo_name="",
-        )
+        ).to_str()
         service = super().create(payload)
         service.set_status(InfraStatus.changes_pending, self.context["user"])
         return service

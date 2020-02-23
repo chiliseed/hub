@@ -1,7 +1,6 @@
 import json
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import NamedTuple
 
 import pytz
 from django.contrib.auth import get_user_model
@@ -141,6 +140,7 @@ class ProjectConf:
 
 class ProjectStatus(BaseModel):
     """Track the status of the project infrastructure."""
+
     project = models.ForeignKey(
         "Project", on_delete=models.CASCADE, related_name="statuses"
     )
@@ -193,7 +193,9 @@ class Project(BaseModel):
         return f"#{self.id} | Env: {self.environment.name} | Name: {self.name}"
 
     def is_ready(self):
-        return self.environment.is_ready() and self.last_status.status == InfraStatus.ready
+        return (
+            self.environment.is_ready() and self.last_status.status == InfraStatus.ready
+        )
 
     def set_conf(self, conf: ProjectConf):
         self.configuration = conf.to_str()
@@ -215,14 +217,18 @@ class Project(BaseModel):
     def conf(self) -> ProjectConf:
         return ProjectConf(**json.loads(self.configuration))
 
-    def get_common_conf(self, exec_log_slug) -> GeneralConfiguration:
+    def get_common_conf(self, exec_log_id, service_id=None) -> GeneralConfiguration:
         env_conf = self.environment.conf()
         return GeneralConfiguration(
-            env_slug=self.environment.slug,
-            project_name=self.name,
+            organization_id=self.organization.id,
+            env_id=self.environment_id,
+            project_id=self.id,
+            service_id=service_id,
             env_name=self.environment.name,
-            run_id=exec_log_slug,
+            project_name=self.name,
+            run_id=exec_log_id,
             vpc_id=env_conf.vpc_id,
+            env_slug=self.environment.slug,
         )
 
     def get_r53_conf(self) -> Route53Configuration:
@@ -231,7 +237,7 @@ class Project(BaseModel):
                 subdomain=service.subdomain,
                 route_to=service.project.conf().alb_public_dns,
             )
-            for service in self.services.select_related("project").all()
+            for service in self.services.select_related("project").filter(is_deleted=False)
         ]
         return Route53Configuration(
             domain=self.environment.domain, cname_subdomains=cnames
@@ -239,24 +245,23 @@ class Project(BaseModel):
 
     def get_alb_conf(self) -> ALBConfigs:
         open_ports = []
-        for service in self.services.all():
-            service_conf = service.conf()
+        for service in self.services.filter(is_deleted=False):
             open_ports.append(
                 OpenPort(
                     name=service.name,
-                    container_port=service_conf.container_port,
-                    alb_port_http=service_conf.alb_port_http,
-                    alb_port_https=service_conf.alb_port_https,
-                    health_check_endpoint=service_conf.health_check_endpoint,
+                    container_port=service.container_port,
+                    alb_port_http=service.alb_port_http,
+                    alb_port_https=service.alb_port_https,
+                    health_check_endpoint=service.health_check_endpoint,
                     health_check_protocol=HTTP,
-                    ssl_certificate_arn=service_conf.acm_arn,
+                    ssl_certificate_arn=service.conf().acm_arn,
                 )
             )
         return ALBConfigs(alb_name=self.conf().alb_name, open_ports=open_ports)
 
     def get_ecr_conf(self) -> ECRConfigs:
         repos = []
-        for service in self.services.all():
+        for service in self.services.filter(is_deleted=False):
             repos.append(service.conf().ecr_repo_name)
 
         return ECRConfigs(repositories=repos)
@@ -265,12 +270,9 @@ class Project(BaseModel):
 @dataclass
 class ServiceConf:
     acm_arn: str
-    container_port: int
-    alb_port_http: int
-    alb_port_https: int
-    health_check_endpoint: str
     health_check_protocol: str
     ecr_repo_name: str
+    ecr_repo_url: str = ""
 
     def to_str(self):
         return json.dumps(asdict(self))
@@ -286,7 +288,7 @@ class ServiceStatus(BaseModel):
     )
 
     def __str__(self):
-        return f"Environment #{self.service.id} | Status {self.status}"
+        return f"Status {self.status} | Set at: {self.created_at}"
 
 
 class Service(BaseModel):
@@ -315,12 +317,25 @@ class Service(BaseModel):
 
     name = models.CharField(max_length=100, null=False, blank=False)
     subdomain = models.CharField(max_length=50, null=False, blank=False)
+    container_port = models.PositiveIntegerField(null=False, blank=False)
+    alb_port_http = models.PositiveIntegerField(null=False, blank=False)
+    alb_port_https = models.PositiveIntegerField(null=False, blank=False)
+    health_check_endpoint = models.CharField(max_length=150, default="/")
     configuration = EncryptedTextField(default="{}")
 
-    class Meta:
-        unique_together = ["name", "project_id"]
+    last_status = models.ForeignKey(
+        ServiceStatus,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="service_object",
+    )
 
-    @property
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"#{self.id} | Name: {self.name} |  Project #{self.project.id}"
+
     def conf(self) -> ServiceConf:
         return ServiceConf(**json.loads(self.configuration))
 
@@ -336,7 +351,7 @@ class Service(BaseModel):
                 actor.organization == self.project.organization
             ), "Actor is from another organization"
 
-        status = ServiceStatus(status=status, created_by=actor, project=self)
+        status = ServiceStatus(status=status, created_by=actor, service=self)
         status.save()
         self.last_status = self.statuses.all().order_by("created_at").last()
         self.save(update_fields=["last_status"])
@@ -402,6 +417,8 @@ class ExecutionLog(BaseModel):
             return Environment.objects.get(id=self.component_id)
         if self.component == self.Components.project:
             return Project.objects.get(id=self.component_id)
+        if self.component == self.Components.service:
+            return Service.objects.get(id=self.component_id)
         return None
 
     def mark_result(self, is_success):

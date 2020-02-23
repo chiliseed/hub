@@ -1,14 +1,11 @@
 """Creates the vpc and it's network."""
-import argparse
 from typing import Any
-
-from common.crypto import get_uuid_hex
 
 from infra_executors.constants import (
     AwsCredentials,
     GeneralConfiguration,
 )
-from infra_executors.constructors import build_state_key
+from infra_executors.constructors import build_environment_state_key
 from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import (
     ExecutorConfiguration,
@@ -29,7 +26,7 @@ def create_network(creds: AwsCredentials, params: GeneralConfiguration,) -> Any:
             name="network",
             action="create",
             config_dir="network",
-            state_key=build_state_key(params, "network"),
+            state_key=build_environment_state_key(params, "network"),
             variables_file_name="network.tfvars",
         ),
     )
@@ -54,7 +51,7 @@ def get_network_details(creds: AwsCredentials, params: GeneralConfiguration,) ->
             name="network",
             action="outputs",
             config_dir="network",
-            state_key=build_state_key(params, "network"),
+            state_key=build_environment_state_key(params, "network"),
             variables_file_name="network.tfvars",
         ),
     )
@@ -71,42 +68,8 @@ def destroy_network(creds: AwsCredentials, params: GeneralConfiguration,) -> Non
             name="network",
             action="destroy",
             config_dir="network",
-            state_key=build_state_key(params, "network"),
+            state_key=build_environment_state_key(params, "network"),
             variables_file_name="network.tfvars",
         ),
     )
     return executor.execute_destroy()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create/destroy vpc and its network.")
-    parser.add_argument(
-        "cmd", type=str, default="create", help="Sub command. One of: create/destroy",
-    )
-    parser.add_argument(
-        "project_name", type=str, help="The name of your project. Example: chiliseed",
-    )
-    parser.add_argument(
-        "environment",
-        type=str,
-        default="develop",
-        help="The name of your environment. Example: develop",
-    )
-    parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
-    parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")
-    parser.add_argument(
-        "--aws-region", type=str, default="us-east-2", dest="aws_region"
-    )
-    parser.add_argument("--run-id", type=str, default=get_uuid_hex(), dest="run_id")
-
-    args = parser.parse_args()
-
-    aws_creds = AwsCredentials(
-        args.aws_access_key, args.aws_secret_key, "", args.aws_region
-    )
-    common = GeneralConfiguration(args.project_name, args.environment, args.run_id)
-
-    if args.cmd == "create":
-        create_network(aws_creds, common)
-    if args.cmd == "destroy":
-        destroy_network(aws_creds, common)

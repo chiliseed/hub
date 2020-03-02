@@ -18,12 +18,12 @@ RUN apt-get update && apt-get upgrade -y && \
         postgresql-client \
         wget && \
     pip install -U pip ipython && \
-    wget https://releases.hashicorp.com/terraform/0.12.20/terraform_0.12.20_linux_amd64.zip && \
-    unzip terraform_0.12.20_linux_amd64.zip -d /usr/local/bin && \
-    rm -rf terraform_0.12.20_linux_amd64.zip && \
-    wget https://releases.hashicorp.com/terraform-provider-aws/2.48.0/terraform-provider-aws_2.48.0_linux_amd64.zip && \
-    unzip terraform-provider-aws_2.48.0_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
-    rm -rf terraform-provider-aws_2.48.0_linux_amd64.zip && \
+    wget https://releases.hashicorp.com/terraform/0.12.21/terraform_0.12.21_linux_amd64.zip && \
+    unzip terraform_0.12.21_linux_amd64.zip -d /usr/local/bin && \
+    rm -rf terraform_0.12.21_linux_amd64.zip && \
+    wget https://releases.hashicorp.com/terraform-provider-aws/2.51.0/terraform-provider-aws_2.51.0_linux_amd64.zip && \
+    unzip terraform-provider-aws_2.51.0_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
+    rm -rf terraform-provider-aws_2.51.0_linux_amd64.zip && \
     wget https://releases.hashicorp.com/terraform-provider-null/2.1.2/terraform-provider-null_2.1.2_linux_amd64.zip && \
     unzip terraform-provider-null_2.1.2_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
     rm -rf terraform-provider-null_2.1.2_linux_amd64.zip && \
@@ -46,4 +46,3 @@ VOLUME ["./src/infra_executors/terraform_plans"]
 VOLUME ["./src/infra_executors/exec_logs"]
 VOLUME ["./src/infra_executors/key_pairs"]
 
-EXPOSE 8000

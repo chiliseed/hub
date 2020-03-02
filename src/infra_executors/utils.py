@@ -1,6 +1,5 @@
 """Common infra executors utilities."""
 import logging
-import re
 import subprocess  # nosec
 from typing import List, Mapping, Optional, Tuple
 

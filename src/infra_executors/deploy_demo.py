@@ -213,7 +213,7 @@ def launch_task_in_cluster(
         launchType="EC2",
         schedulingStrategy="REPLICA",
         deploymentController={"type": "ECS"},  # rolling update
-        deploymentConfiguration={"maximumPercent": 200, "minimumHealthyPercent": 100,},
+        deploymentConfiguration={"maximumPercent": 200, "minimumHealthyPercent": 100},
         loadBalancers=[
             {
                 "targetGroupArn": target_group_arn,

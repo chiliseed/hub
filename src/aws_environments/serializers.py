@@ -9,6 +9,7 @@ from aws_environments.models import (
     ProjectStatus,
     Service,
     ServiceConf,
+    BuildWorker,
 )
 
 
@@ -102,6 +103,7 @@ class ServiceSerializer(serializers.ModelSerializer):
     alb_port_http = serializers.IntegerField(required=True)
     alb_port_https = serializers.IntegerField(required=True)
     health_check_endpoint = serializers.CharField(max_length=100, required=True)
+    ecr_repo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Service
@@ -113,20 +115,37 @@ class ServiceSerializer(serializers.ModelSerializer):
             "alb_port_http",
             "alb_port_https",
             "health_check_endpoint",
+            "ecr_repo_url",
         )
         read_only_fields = ("slug",)
 
     def create(self, validated_data):
         payload = {**validated_data}
         payload["configuration"] = ServiceConf(
-            acm_arn="",
-            # container_port=payload["container_port"],
-            # alb_port_http=payload["alb_port_http"],
-            # alb_port_https=payload["alb_port_https"],
-            # health_check_endpoint=payload["health_check_endpoint"],
-            health_check_protocol="",
-            ecr_repo_name="",
+            acm_arn="", health_check_protocol="", ecr_repo_name="",
         ).to_str()
         service = super().create(payload)
         service.set_status(InfraStatus.changes_pending, self.context["user"])
         return service
+
+    def get_ecr_repo_url(self, obj):
+        return obj.conf().ecr_repo_url
+
+
+class CreateBuildWorkerSerializer(serializers.Serializer):
+    version = serializers.CharField(max_length=50, required=True)
+
+
+class BuildWorkerSerializer(serializers.ModelSerializer):
+    is_ready = serializers.SerializerMethodField()
+    ssh_key = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BuildWorker
+        fields = ("slug", "is_ready", "public_ip", "ssh_key", "ssh_key_name")
+
+    def get_is_ready(self, obj):
+        return obj.launched_at is not None
+
+    def get_ssh_key(self, obj):
+        return obj.service.project.get_ssh_key()

@@ -7,13 +7,19 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_environments', '0010_auto_20200223_0928'),
+        ("aws_environments", "0010_auto_20200223_0928"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='service',
-            name='last_status',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='service_object', to='aws_environments.ServiceStatus'),
+            model_name="service",
+            name="last_status",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="service_object",
+                to="aws_environments.ServiceStatus",
+            ),
         ),
     ]

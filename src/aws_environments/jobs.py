@@ -1,15 +1,23 @@
+from datetime import datetime, timedelta, timezone
+
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from infra_executors.alb import HTTP
+from infra_executors.build_worker import (
+    BuildWorkerConfigs,
+    launch_build_worker_server,
+    remove_build_worker_server,
+)
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
 from infra_executors.ecs_service import (
     create_acm_for_service,
-    ServiceConfiguration,
     launch_infa_for_service,
-    destroy_service_infra)
+    destroy_service_infra,
+)
 from infra_executors.route53 import Route53Configuration
+from infra_executors.utils import get_boto3_client
 from .constants import InfraStatus
 from .models import (
     Environment,
@@ -19,6 +27,7 @@ from .models import (
     ProjectConf,
     Service,
     ServiceConf,
+    BuildWorker,
 )
 
 logger = get_task_logger(__name__)
@@ -103,6 +112,7 @@ def create_project_infra(project_id, exec_log_id):
                 alb_name=alb["alb_name"]["value"],
                 alb_public_dns=alb["public_dns"]["value"],
                 ecs_cluster=ecs_cluster["cluster"]["value"],
+                ecs_executor_role_arn=ecs_cluster["ecs_executor_role_arn"]["value"],
             )
         )
 
@@ -146,15 +156,21 @@ def create_service_infra(service_id, exec_log_id):
 
     try:
         acm_arn = create_acm_for_service(
-            creds, common_conf, r53_conf, service.subdomain, service.project.environment.conf().r53_zone_id
+            creds,
+            common_conf,
+            r53_conf,
+            service.subdomain,
+            service.project.environment.conf().r53_zone_id,
         )
 
         ecr_repo_name = f"{service.project.name}/{service.name}"
-        service.set_conf(ServiceConf(
-            acm_arn=acm_arn,
-            health_check_protocol=HTTP,
-            ecr_repo_name=f"{service.project.name}/{service.name}"
-        ))
+        service.set_conf(
+            ServiceConf(
+                acm_arn=acm_arn,
+                health_check_protocol=HTTP,
+                ecr_repo_name=f"{service.project.name}/{service.name}",
+            )
+        )
 
         alb_conf = service.project.get_alb_conf()
         ecr_conf = service.project.get_ecr_conf()
@@ -163,7 +179,16 @@ def create_service_infra(service_id, exec_log_id):
             creds, common_conf, r53_conf, alb_conf, ecr_conf,
         )
 
-        ecr_repo_url = [url for url in infra["ecr"]["repositories_urls"]["value"] if ecr_repo_name in url][0]
+        ecr_repo_url = [
+            url
+            for url in infra["ecr"]["repositories_urls"]["value"]
+            if ecr_repo_name in url
+        ][0]
+        target_group_arn = [
+            arn
+            for arn in infra["alb"]["target_groups_arn"]["value"]
+            if service.name in arn
+        ][0]
     except:
         logger.exception(
             "Failed to create project infra project_id=%s exec_log_id=%s",
@@ -181,6 +206,7 @@ def create_service_infra(service_id, exec_log_id):
             health_check_protocol=HTTP,
             ecr_repo_name=ecr_repo_name,
             ecr_repo_url=ecr_repo_url,
+            target_group_arn=target_group_arn,
         )
     )
     service.set_status(InfraStatus.ready)
@@ -219,7 +245,13 @@ def remove_service_infra(service_id, exec_log_id):
 
     try:
         destroy_service_infra(
-            creds, common_conf, r53_conf, alb_conf, ecr_conf, service.project.environment.conf().r53_zone_id, service.subdomain
+            creds,
+            common_conf,
+            r53_conf,
+            alb_conf,
+            ecr_conf,
+            service.project.environment.conf().r53_zone_id,
+            service.subdomain,
         )
     except:
         logger.exception(
@@ -237,6 +269,121 @@ def remove_service_infra(service_id, exec_log_id):
     logger.info(
         "Removed service environment service_id=%s exec_log_id=%s",
         service_id,
+        exec_log_id,
+    )
+    return True
+
+
+@shared_task
+def launch_build_worker(build_worker_id, exec_log_id):
+    logger.info(
+        "Launching build worker for build_worker_id=%s exec_log_id=%s",
+        build_worker_id,
+        exec_log_id,
+    )
+    worker = BuildWorker.objects.select_related(
+        "service", "service__project", "service__project__environment"
+    ).get(id=build_worker_id)
+    exec_log = ExecutionLog.objects.get(id=exec_log_id)
+
+    creds = worker.service.project.environment.get_creds()
+    common_conf = worker.service.project.get_common_conf(exec_log_id, worker.service_id)
+    build_worker_conf = BuildWorkerConfigs(
+        ssh_key_name=worker.service.project.get_ssh_key_name(),
+        aws_access_key_id=creds.access_key,
+        aws_access_key_secret=creds.secret_key,
+        env_name=worker.service.project.environment.name,
+        code_version=exec_log.get_params()["version"],
+        service_name=worker.service.name,
+        ecr_url=worker.service.conf().ecr_repo_url,
+        valid_until=(datetime.utcnow() + timedelta(minutes=5))
+        .replace(tzinfo=timezone.utc)
+        .isoformat(),
+    )
+
+    try:
+        infra = launch_build_worker_server(creds, common_conf, build_worker_conf)
+        ec2_client = get_boto3_client("ec2", creds)
+        waiter = ec2_client.get_waiter("instance_status_ok")
+        waiter.wait(
+            InstanceIds=[infra["instance_id"]["value"]],
+            Filters=[{"Name": "instance-state-code", "Values": ["16"]}],
+            WaiterConfig={"Delay": 15, "MaxAttempts": 20,},
+        )
+    except:
+        logger.exception(
+            "Failed to launch build worker build_worker_id=%s exec_log_id=%s",
+            build_worker_id,
+            exec_log_id,
+        )
+
+        exec_log.mark_result(False)
+        return False
+
+    worker.launched_at = datetime.utcnow().replace(tzinfo=timezone.utc)
+    worker.instance_id = infra["instance_id"]["value"]
+    worker.public_ip = infra["instance_public_ip"]["value"]
+    worker.ssh_key_name = worker.service.project.get_ssh_key_name()
+    worker.save()
+
+    exec_log.mark_result(True)
+
+    logger.info(
+        "Launched build worker build_worker_id=%s exec_log_id=%s",
+        worker.id,
+        exec_log_id,
+    )
+    return True
+
+
+@shared_task
+def remove_build_worker(build_worker_id, exec_log_id):
+    logger.info(
+        "Remove build worker for build_worker_id=%s exec_log_id=%s",
+        build_worker_id,
+        exec_log_id,
+    )
+    worker = BuildWorker.objects.select_related(
+        "service", "service__project", "service__project__environment"
+    ).get(id=build_worker_id)
+    exec_log = ExecutionLog.objects.get(id=exec_log_id)
+
+    creds = worker.service.project.environment.get_creds()
+    common_conf = worker.service.project.get_common_conf(exec_log_id, worker.service_id)
+    build_worker_conf = BuildWorkerConfigs(
+        ssh_key_name=worker.service.project.get_ssh_key_name(),
+        aws_access_key_id=creds.access_key,
+        aws_access_key_secret=creds.secret_key,
+        env_name=worker.service.project.environment.name,
+        code_version="",
+        service_name=worker.service.name,
+        ecr_url=worker.service.conf().ecr_repo_url,
+        valid_until=(datetime.utcnow() + timedelta(minutes=5))
+        .replace(tzinfo=timezone.utc)
+        .isoformat(),
+    )
+
+    try:
+        remove_build_worker_server(creds, common_conf, build_worker_conf)
+    except:
+        logger.exception(
+            "Failed to remove build worker build_worker_id=%s exec_log_id=%s",
+            build_worker_id,
+            exec_log_id,
+        )
+
+        exec_log.mark_result(False)
+        return False
+
+    worker.is_deleted = True
+    worker.deleted_at = datetime.utcnow().replace(tzinfo=timezone.utc)
+    worker.save()
+
+    exec_log.mark_result(True)
+
+    logger.info(
+        "Removed build worker build_worker_id=%s exec_log_id=%s",
+        worker.id,
         exec_log_id,
     )
     return True

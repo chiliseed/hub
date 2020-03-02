@@ -7,6 +7,8 @@ from aws_environments.views import (
     ExecutionLogDetailsView,
     CreateListProject,
     CreateListServices,
+    CreateWorker,
+    WorkerDetails,
 )
 
 app_name = "aws_env"
@@ -28,6 +30,10 @@ urlpatterns = [
         CreateListServices.as_view({"get": "can_create"}),
         name="services_create_check",
     ),
+    path(
+        "service/<slug:slug>/build", CreateWorker.as_view(), name="launch_build_worker"
+    ),
+    path("worker/<slug:slug>", WorkerDetails.as_view(), name="worker"),
     path(
         "execution/status/<slug:slug>",
         ExecutionLogDetailsView.as_view(),

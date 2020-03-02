@@ -10,6 +10,10 @@ resource "aws_security_group" "alb" {
   description = "Used in ${var.env_name}"
   vpc_id      = var.vpc_id
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
     Name        = "${var.env_name}_${var.alb_name}"
     Environment = var.env_name

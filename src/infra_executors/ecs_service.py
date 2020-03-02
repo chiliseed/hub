@@ -34,8 +34,7 @@ def create_acm_for_service(
         creds,
         common_conf,
         SSLConfigs(
-            domain_name=f"{subdomain}.{route53_conf.domain}",
-            zone_id=r53_zone_id,
+            domain_name=f"{subdomain}.{route53_conf.domain}", zone_id=r53_zone_id,
         ),
     )
     logger.info("Created acm certificate: %s", acm["this_acm_certificate_arn"]["value"])
@@ -65,13 +64,13 @@ def launch_infa_for_service(
 
 
 def destroy_service_infra(
-        creds: AwsCredentials,
-        common_conf: GeneralConfiguration,
-        route53_conf: Route53Configuration,
-        alb_conf: ALBConfigs,
-        ecr_conf: ECRConfigs,
-        r53_zone_id: str,
-        subdomain: str,
+    creds: AwsCredentials,
+    common_conf: GeneralConfiguration,
+    route53_conf: Route53Configuration,
+    alb_conf: ALBConfigs,
+    ecr_conf: ECRConfigs,
+    r53_zone_id: str,
+    subdomain: str,
 ):
     logger.info("Removing ECR repo for service")
     destroy_ecr(creds, common_conf, ecr_conf)
@@ -90,8 +89,7 @@ def destroy_service_infra(
         creds,
         common_conf,
         SSLConfigs(
-            domain_name=f"{subdomain}.{route53_conf.domain}",
-            zone_id=r53_zone_id,
+            domain_name=f"{subdomain}.{route53_conf.domain}", zone_id=r53_zone_id,
         ),
     )
     logger.info("Removed ACM")

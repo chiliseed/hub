@@ -1,4 +1,5 @@
 import json
+import os
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
@@ -11,7 +12,7 @@ from fernet_fields import EncryptedTextField
 from aws_environments.constants import Regions, InfraStatus
 from common.models import BaseModel
 from infra_executors.alb import HTTP, ALBConfigs, OpenPort
-from infra_executors.constants import AwsCredentials, GeneralConfiguration
+from infra_executors.constants import AwsCredentials, GeneralConfiguration, KEYS_DIR
 from infra_executors.ecr import ECRConfigs
 from infra_executors.route53 import Route53Configuration, CnameSubDomain
 
@@ -133,6 +134,7 @@ class ProjectConf:
     alb_name: str
     alb_public_dns: str
     ecs_cluster: str
+    ecs_executor_role_arn: str = ""
 
     def to_str(self):
         return json.dumps(asdict(self))
@@ -237,7 +239,9 @@ class Project(BaseModel):
                 subdomain=service.subdomain,
                 route_to=service.project.conf().alb_public_dns,
             )
-            for service in self.services.select_related("project").filter(is_deleted=False)
+            for service in self.services.select_related("project").filter(
+                is_deleted=False
+            )
         ]
         return Route53Configuration(
             domain=self.environment.domain, cname_subdomains=cnames
@@ -266,6 +270,16 @@ class Project(BaseModel):
 
         return ECRConfigs(repositories=repos)
 
+    def get_ssh_key_name(self):
+        return f"{self.name}_{self.environment.name}_{self.environment.slug}"
+
+    def get_ssh_key(self):
+        with open(
+            os.path.join(KEYS_DIR, f"{self.get_ssh_key_name()}.pem"), "rb"
+        ) as ssh_key_file:
+            ssh_key_content = ssh_key_file.read()
+        return ssh_key_content
+
 
 @dataclass
 class ServiceConf:
@@ -273,6 +287,7 @@ class ServiceConf:
     health_check_protocol: str
     ecr_repo_name: str
     ecr_repo_url: str = ""
+    target_group_arn: str = ""
 
     def to_str(self):
         return json.dumps(asdict(self))
@@ -306,7 +321,9 @@ class Service(BaseModel):
         "route53",
         "ecr",
     )
-
+    organization = models.ForeignKey(
+        "organizations.Organization", related_name="services", on_delete=models.CASCADE,
+    )
     project = models.ForeignKey(
         Project,
         related_name="services",
@@ -356,6 +373,35 @@ class Service(BaseModel):
         self.last_status = self.statuses.all().order_by("created_at").last()
         self.save(update_fields=["last_status"])
 
+    def is_ready(self):
+        return self.project.is_ready() and self.last_status.status == InfraStatus.ready
+
+
+class BuildWorker(BaseModel):
+    """Manages deployment build workers.
+
+    These are short lived spot instances, built from Chiliseed ami, which have
+    the tools to build docker image and push it to ECR of the service.
+    """
+
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        related_name="service_builders",
+        on_delete=models.CASCADE,
+    )
+    service = models.ForeignKey(
+        Service, related_name="build_workers", on_delete=models.CASCADE
+    )
+    launched_at = models.DateTimeField(null=True)
+    instance_id = models.CharField(max_length=80, null=True)
+    ssh_key_name = EncryptedTextField(max_length=150, null=False)
+    public_ip = EncryptedTextField(max_length=50, default="")
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"#{self.id} | Service: {self.service}"
+
 
 class ExecutionLog(BaseModel):
     """Manages infra executor logs for a specific change."""
@@ -370,6 +416,7 @@ class ExecutionLog(BaseModel):
         service = "service"
         project = "project"
         environment = "environment"
+        build_worker = "build_worker"
 
     organization = models.ForeignKey(
         "organizations.Organization",
@@ -412,6 +459,9 @@ class ExecutionLog(BaseModel):
             component_id=component_id,
         )
 
+    def get_params(self):
+        return json.loads(self.params)
+
     def get_component_obj(self):
         if self.component == self.Components.environment:
             return Environment.objects.get(id=self.component_id)
@@ -419,6 +469,8 @@ class ExecutionLog(BaseModel):
             return Project.objects.get(id=self.component_id)
         if self.component == self.Components.service:
             return Service.objects.get(id=self.component_id)
+        if self.component == self.Components.build_worker:
+            return BuildWorker.objects.get(id=self.component_id)
         return None
 
     def mark_result(self, is_success):

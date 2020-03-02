@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from aws_environments.models import Environment, Project, ExecutionLog, Service
+from aws_environments.models import (
+    Environment,
+    Project,
+    ExecutionLog,
+    Service,
+    BuildWorker,
+)
 
 
 class EnvironmentAdmin(admin.ModelAdmin):
@@ -29,9 +35,14 @@ class ServiceAdmin(admin.ModelAdmin):
         "project",
         "organization",
         "status",
+        "is_deleted",
     )
     list_display_links = ("id", "project", "organization")
-    readonly_fields = ("slug", "id", )
+    list_filter = ("is_deleted", "last_status__status")
+    readonly_fields = (
+        "slug",
+        "id",
+    )
 
     def organization(self, obj):
         return obj.project.organization
@@ -58,7 +69,10 @@ class ExecLogAdmin(admin.ModelAdmin):
         "slug",
         "component_id",
     )
-    readonly_fields = ("slug", "id",)
+    readonly_fields = (
+        "slug",
+        "id",
+    )
 
     def env(self, obj):
         component = obj.get_component_obj()
@@ -68,11 +82,38 @@ class ExecLogAdmin(admin.ModelAdmin):
             return component.name
         elif obj.component == obj.Components.service:
             return component.project.environment.name
+        elif obj.component == obj.Components.build_worker:
+            return component.service.project.environment.name
         else:
             return component.environment.name
+
+
+class BuildWorkerAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "slug",
+        "organization",
+        "service",
+        "launched_at",
+        "is_ready",
+        "is_deleted",
+    )
+    list_filter = ("is_deleted",)
+    search_fields = (
+        "id",
+        "slug",
+    )
+    readonly_fields = (
+        "slug",
+        "id",
+    )
+
+    def is_ready(self, obj):
+        return obj.instance_id is not None
 
 
 admin.site.register(Environment, EnvironmentAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(ExecutionLog, ExecLogAdmin)
 admin.site.register(Service, ServiceAdmin)
+admin.site.register(BuildWorker, BuildWorkerAdmin)

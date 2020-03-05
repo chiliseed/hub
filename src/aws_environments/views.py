@@ -19,14 +19,14 @@ from aws_environments.jobs import (
     create_project_infra,
     create_service_infra,
     launch_build_worker,
-)
+    deploy_version_to_service)
 from aws_environments.models import (
     Environment,
     ExecutionLog,
     Project,
     Service,
     BuildWorker,
-)
+    ServiceDeployment)
 from aws_environments.serializers import (
     CreateEnvironmentSerializer,
     EnvironmentSerializer,
@@ -35,7 +35,7 @@ from aws_environments.serializers import (
     ServiceSerializer,
     CreateBuildWorkerSerializer,
     BuildWorkerSerializer,
-)
+    ServiceDeploymentSerializer)
 from infra_executors.utils import get_boto3_client
 
 logger = logging.getLogger(__name__)
@@ -328,3 +328,42 @@ class WorkerDetails(RetrieveAPIView):
 
     def get_queryset(self):
         return BuildWorker.objects.filter(organization=self.request.user.organization)
+
+
+class DeployService(CreateAPIView):
+    serializer_class = ServiceDeploymentSerializer
+    lookup_field = "slug"
+    lookup_url_kwarg = "slug"
+
+    def get_queryset(self):
+        return Service.objects.filter(organization=self.request.user.organization)
+
+    def post(self, request, *args, **kwargs):
+        service = self.get_object()
+        if not service.is_ready():
+            return Response(
+                data={"detail": "service is not ready"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        deployment = ServiceDeployment.objects.create(
+            organization=self.request.user.organization,
+            service=service,
+            version=serializer.validated_data["version"],
+        )
+        exec_log = ExecutionLog.register(
+            self.request.user.organization,
+            ExecutionLog.ActionTypes.create,
+            request.data,
+            ExecutionLog.Components.deployment,
+            deployment.id,
+        )
+
+        deploy_version_to_service.delay(deployment.id, exec_log.id)
+        return Response(
+            data=dict(deployment=deployment.slug, log=exec_log.slug),
+            status=status.HTTP_201_CREATED,
+        )

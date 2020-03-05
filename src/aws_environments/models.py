@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
 from django.contrib.auth import get_user_model
@@ -403,6 +403,32 @@ class BuildWorker(BaseModel):
         return f"#{self.id} | Service: {self.service}"
 
 
+class ServiceDeployment(BaseModel):
+    """Manages service deployments."""
+
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        related_name="service_deployments",
+        on_delete=models.CASCADE,
+        null=False,
+        blank=True
+    )
+    service = models.ForeignKey(
+        Service, related_name="deployments", on_delete=models.CASCADE, null=False, blank=True
+    )
+    deployed_at = models.DateTimeField(null=True, blank=True)
+    version = models.CharField(max_length=20, null=False, blank=False)
+    is_success = models.NullBooleanField(blank=True)
+
+    def __str__(self):
+        return f"#{self.id} | Service: {self.service} | Version: {self.version}"
+
+    def mark_result(self, is_success):
+        self.is_success = is_success
+        self.deployed_at = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.save(update_fields=["is_success", "deployed_at"])
+
+
 class ExecutionLog(BaseModel):
     """Manages infra executor logs for a specific change."""
 
@@ -417,6 +443,7 @@ class ExecutionLog(BaseModel):
         project = "project"
         environment = "environment"
         build_worker = "build_worker"
+        deployment = "deployment"
 
     organization = models.ForeignKey(
         "organizations.Organization",
@@ -471,6 +498,8 @@ class ExecutionLog(BaseModel):
             return Service.objects.get(id=self.component_id)
         if self.component == self.Components.build_worker:
             return BuildWorker.objects.get(id=self.component_id)
+        if self.component == self.Components.deployment:
+            return ServiceDeployment.objects.get(id=self.component_id)
         return None
 
     def mark_result(self, is_success):

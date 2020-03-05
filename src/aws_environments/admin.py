@@ -84,6 +84,8 @@ class ExecLogAdmin(admin.ModelAdmin):
             return component.project.environment.name
         elif obj.component == obj.Components.build_worker:
             return component.service.project.environment.name
+        elif obj.component == obj.Components.deployment:
+            return component.service.project.environment.name
         else:
             return component.environment.name
 

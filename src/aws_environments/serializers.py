@@ -10,7 +10,7 @@ from aws_environments.models import (
     Service,
     ServiceConf,
     BuildWorker,
-)
+    ServiceDeployment)
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):
@@ -149,3 +149,10 @@ class BuildWorkerSerializer(serializers.ModelSerializer):
 
     def get_ssh_key(self, obj):
         return obj.service.project.get_ssh_key()
+
+
+class ServiceDeploymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceDeployment
+        fields = ("slug", "deployed_at", "version", "is_success")
+        read_only_fields = ("slug", "deployed_at", "is_success")

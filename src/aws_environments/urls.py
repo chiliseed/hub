@@ -9,7 +9,7 @@ from aws_environments.views import (
     CreateListServices,
     CreateWorker,
     WorkerDetails,
-)
+    DeployService)
 
 app_name = "aws_env"
 urlpatterns = [
@@ -32,6 +32,9 @@ urlpatterns = [
     ),
     path(
         "service/<slug:slug>/build", CreateWorker.as_view(), name="launch_build_worker"
+    ),
+    path(
+        "service/<slug:slug>/deploy", DeployService.as_view(), name="deploy_service"
     ),
     path("worker/<slug:slug>", WorkerDetails.as_view(), name="worker"),
     path(

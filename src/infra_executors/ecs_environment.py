@@ -84,6 +84,7 @@ def launch_project_infra(
         cluster=f"{common_conf.project_name}-{common_conf.env_slug}",
         instance_group_name=f"{common_conf.project_name}-{common_conf.env_slug}",
         cloudwatch_prefix=f"{common_conf.project_name}-{common_conf.env_slug}",
+        alb_security_group_id=alb["alb_security_group_id"]["value"],
     )
     ecs = create_ecs_cluster(creds, common_conf, ecs_conf)
     logger.info("Created ECS cluster %s", ecs["cluster"])

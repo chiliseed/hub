@@ -10,7 +10,7 @@ from infra_executors.build_worker import (
     remove_build_worker_server,
 )
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
-from infra_executors.deploy_ecs_service import deploy, DeploymentConf
+from infra_executors.deploy_ecs_service import deploy_ecs_service, DeploymentConf, remove_ecs_service
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
 from infra_executors.ecs_service import (
     create_acm_for_service,
@@ -277,13 +277,6 @@ def remove_service_infra(service_id, exec_log_id):
 
 
 @shared_task
-def update_service_infra(previous_service_id, new_service_id, exec_log_id):
-    remove_service_infra(previous_service_id, exec_log_id)
-    create_service_infra(new_service_id, exec_log_id)
-    return True
-
-
-@shared_task
 def launch_build_worker(build_worker_id, exec_log_id):
     logger.info(
         "Launching build worker for build_worker_id=%s exec_log_id=%s",
@@ -398,6 +391,20 @@ def remove_build_worker(build_worker_id, exec_log_id):
     return True
 
 
+def get_deployment_conf(deployment):
+    service_conf = deployment.service.conf()
+    project_conf = deployment.service.project.conf()
+    return DeploymentConf(
+        ecs_cluster=project_conf.ecs_cluster,
+        ecs_executor_role_arn=project_conf.ecs_executor_role_arn,
+        service_name=deployment.service.name,
+        repo_url=service_conf.ecr_repo_url,
+        version=deployment.version,
+        container_port=deployment.service.container_port,
+        target_group_arn=service_conf.target_group_arn,
+    )
+
+
 @shared_task
 def deploy_version_to_service(deployment_id, exec_log_id):
     logger.info(
@@ -411,20 +418,10 @@ def deploy_version_to_service(deployment_id, exec_log_id):
     ).get(id=deployment_id)
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
 
-    service_conf = deployment.service.conf()
-    project_conf = deployment.service.project.conf()
-    deploy_conf = DeploymentConf(
-        ecs_cluster=project_conf.ecs_cluster,
-        ecs_executor_role_arn=project_conf.ecs_executor_role_arn,
-        service_name=deployment.service.name,
-        repo_url=service_conf.ecr_repo_url,
-        version=deployment.version,
-        container_port=deployment.service.container_port,
-        target_group_arn=service_conf.target_group_arn,
-    )
+    deploy_conf = get_deployment_conf(deployment)
 
     try:
-        deploy(
+        deploy_ecs_service(
             deployment.service.project.environment.get_creds(),
             deployment.service.project.get_common_conf(exec_log_id, deployment.service_id),
             deploy_conf
@@ -441,4 +438,20 @@ def deploy_version_to_service(deployment_id, exec_log_id):
         "New version deployed. deployment_id=%s exec_log_id=%s",
         deployment_id, exec_log_id
     )
+    return True
+
+
+@shared_task
+def update_service_infra(previous_service_id, new_service_id, exec_log_id):
+    deployment = ServiceDeployment.objects.filter(service_id=previous_service_id).latest("deployed_at")
+    if deployment:
+        creds = deployment.service.project.environment.get_creds()
+        remove_ecs_service(creds, get_deployment_conf(deployment))
+
+    remove_service_infra(previous_service_id, exec_log_id)
+    create_service_infra(new_service_id, exec_log_id)
+
+    if deployment:
+        deploy_version_to_service(deployment.id, exec_log_id)
+
     return True

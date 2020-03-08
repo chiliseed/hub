@@ -428,7 +428,6 @@ class ServiceDeployment(BaseModel):
         self.deployed_at = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.save(update_fields=["is_success", "deployed_at"])
 
-
 class ExecutionLog(BaseModel):
     """Manages infra executor logs for a specific change."""
 

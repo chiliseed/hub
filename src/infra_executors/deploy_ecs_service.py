@@ -1,5 +1,4 @@
 """Deploys and removes demo application."""
-import argparse
 import logging
 from dataclasses import dataclass
 from time import sleep
@@ -160,7 +159,7 @@ def launch_task_in_cluster(
     logger.debug("ECS create service response: %s", response)
 
 
-def deploy(
+def deploy_ecs_service(
     creds: AwsCredentials,
     params: GeneralConfiguration,
     deploy_conf: DeploymentConf
@@ -172,25 +171,24 @@ def deploy(
     logger.info("Service %s deployed", deploy_conf.service_name)
 
 
-def remove(
-    creds: AwsCredentials, params: GeneralConfiguration, cluster_name: str
+def remove_ecs_service(
+    creds: AwsCredentials, deploy_conf: DeploymentConf
 ) -> None:
-    """Remove demo application from cluster."""
-    cluster = f"{cluster_name}-{params.env_name}"
-    logger.info("Removing %s from cluster %s", DEMO_APP, cluster_name)
+    """Remove ecs service from cluster."""
+    logger.info("Removing %s from cluster %s", deploy_conf.service_name, deploy_conf.ecs_cluster)
     client = get_boto3_client("ecs", creds)
 
-    logger.info("Get task definitions: %s", FAMILY_NAME)
+    logger.info("Get task definitions: %s", deploy_conf.service_name)
     task_definitions = client.list_task_definitions(
-        familyPrefix=FAMILY_NAME, sort="DESC",
+        familyPrefix=deploy_conf.service_name, sort="DESC",
     )
     if not task_definitions["taskDefinitionArns"]:
-        logger.info("Found 0 task definitions for family %s", FAMILY_NAME)
+        logger.info("Found 0 task definitions for family %s", deploy_conf.service_name)
     else:
         logger.info("Scaling down %s", SERVICE_NAME)
         client.update_service(
-            cluster=cluster,
-            service=SERVICE_NAME,
+            cluster=deploy_conf.ecs_cluster,
+            service=deploy_conf.service_name,
             taskDefinition=task_definitions["taskDefinitionArns"][0],
             desiredCount=0,
             deploymentConfiguration={
@@ -199,63 +197,14 @@ def remove(
             },
             forceNewDeployment=True,
         )
-        wait_for_service_scale(creds, cluster, SERVICE_NAME, 0)
+        wait_for_service_scale(creds, deploy_conf.ecs_cluster, deploy_conf.service_name, 0)
 
-    logger.info("Deleting service %s", SERVICE_NAME)
-    client.delete_service(cluster=cluster, service=SERVICE_NAME, force=True)
+    logger.info("Deleting service %s", deploy_conf.service_name)
+    client.delete_service(cluster=deploy_conf.ecs_cluster, service=deploy_conf.service_name, force=True)
 
     logger.info("Removing task definitions")
     for task_definition in task_definitions["taskDefinitionArns"]:
         client.deregister_task_definition(taskDefinition=task_definition)
         logger.info("Deregisted %s", task_definition)
 
-    logger.info("Demo api removed")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="deploy/remove demo api in provided ecs cluster/vpc."
-    )
-    parser.add_argument(
-        "cmd", type=str, default="deploy", help="Sub command. One of: deploy/remove",
-    )
-    parser.add_argument(
-        "project_name", type=str, help="The name of your project. Example: chiliseed",
-    )
-    parser.add_argument(
-        "environment",
-        type=str,
-        default="develop",
-        help="The name of your environment. Example: develop",
-    )
-    parser.add_argument(
-        "vpc_id", type=str, help="The id of the vpc. Example: vpc-0c5b94e64b709fa24",
-    )
-    parser.add_argument(
-        "cluster", type=str, help="Name of ECS cluster to deploy to",
-    )
-    parser.add_argument(
-        "target_group",
-        type=str,
-        help="Load balancer target group arn via which the service will " "be served",
-    )
-    parser.add_argument("--aws-access-key", type=str, dest="aws_access_key")
-    parser.add_argument("--aws-secret-key", type=str, dest="aws_secret_key")
-    parser.add_argument(
-        "--aws-region", type=str, default="us-east-2", dest="aws_region"
-    )
-    parser.add_argument("--run-id", type=str, default=1, dest="run_id")
-
-    args = parser.parse_args()
-
-    aws_creds = AwsCredentials(
-        args.aws_access_key, args.aws_secret_key, "", args.aws_region
-    )
-    common = GeneralConfiguration(
-        args.project_name, args.environment, args.run_id, args.vpc_id
-    )
-
-    if args.cmd == "deploy":
-        deploy(aws_creds, common, args.cluster, args.target_group)
-    if args.cmd == "remove":
-        remove(aws_creds, common, args.cluster)
+    logger.info("Service removed")

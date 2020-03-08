@@ -1,3 +1,6 @@
+import string
+
+from django.core.validators import URLValidator
 from rest_framework import serializers
 
 from aws_environments.constants import InfraStatus
@@ -119,8 +122,19 @@ class ServiceSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("slug",)
 
+    def validate_subdomain(self, value):
+        if not value:
+            raise serializers.ValidationError("subdomain is required")
+
+        dummy_uri_to_check = f"http://{value}.example.com"
+        # this will raise validation errors in case of issues
+        URLValidator().__call__(dummy_uri_to_check)
+
+        return value
+
     def create(self, validated_data):
         payload = {**validated_data}
+        payload["name"] = validated_data["name"].translate({ord(c): None for c in string.whitespace})
         payload["configuration"] = ServiceConf(
             acm_arn="", health_check_protocol="", ecr_repo_name="",
         ).to_str()

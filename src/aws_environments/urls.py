@@ -22,7 +22,7 @@ urlpatterns = [
     ),
     path(
         "project/<slug:project_slug>/services/",
-        CreateListServices.as_view({"post": "create", "get": "list"}),
+        CreateListServices.as_view({"post": "create", "get": "list", "patch": "update"}),
         name="services",
     ),
     path(

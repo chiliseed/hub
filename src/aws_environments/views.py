@@ -19,7 +19,7 @@ from aws_environments.jobs import (
     create_project_infra,
     create_service_infra,
     launch_build_worker,
-    deploy_version_to_service)
+    deploy_version_to_service, update_service_infra)
 from aws_environments.models import (
     Environment,
     ExecutionLog,
@@ -182,6 +182,53 @@ class CreateListServices(ModelViewSet):
         )
 
         create_service_infra.delay(service.id, exec_log.id)
+
+        return Response(
+            dict(
+                service=self.get_serializer_class()(instance=service).data,
+                log=exec_log.slug,
+            ),
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        project = self.get_object()
+        if not project.is_ready():
+            return Response(
+                data={"detail": "Project is not in ready state"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payload = {**request.data}
+        if not payload.get("slug"):
+            return Response(
+                data={"detail": "Missing service slug"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        old_service_slug = payload['slug']
+        old_service = Service.objects.filter(slug=old_service_slug, is_deleted=False).first()
+        if not old_service:
+            return Response(
+                data={"detail": "Service not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        del payload['slug']
+
+        serializer = self.get_serializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        service = serializer.save(project=project)
+
+        exec_log = ExecutionLog.register(
+            self.request.user.organization,
+            ExecutionLog.ActionTypes.create,
+            request.data,
+            ExecutionLog.Components.service,
+            service.id,
+        )
+
+        update_service_infra.delay(old_service.id, service.id, exec_log.id)
 
         return Response(
             dict(

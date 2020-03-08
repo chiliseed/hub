@@ -277,6 +277,13 @@ def remove_service_infra(service_id, exec_log_id):
 
 
 @shared_task
+def update_service_infra(previous_service_id, new_service_id, exec_log_id):
+    remove_service_infra(previous_service_id, exec_log_id)
+    create_service_infra(new_service_id, exec_log_id)
+    return True
+
+
+@shared_task
 def launch_build_worker(build_worker_id, exec_log_id):
     logger.info(
         "Launching build worker for build_worker_id=%s exec_log_id=%s",

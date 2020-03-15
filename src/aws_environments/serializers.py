@@ -5,15 +5,16 @@ from rest_framework import serializers
 
 from aws_environments.constants import InfraStatus
 from aws_environments.models import (
+    BuildWorker,
     Environment,
-    ExecutionLog,
     EnvStatus,
+    ExecutionLog,
     Project,
     ProjectStatus,
     Service,
     ServiceConf,
-    BuildWorker,
-    ServiceDeployment)
+    ServiceDeployment,
+)
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):

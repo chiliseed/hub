@@ -6,7 +6,7 @@ from aws_environments.views import (
     EnvironmentList,
     ExecutionLogDetailsView,
     CreateListProject,
-    CreateListServices,
+    CreateListUpdateServices,
     CreateWorker,
     WorkerDetails,
     DeployService)
@@ -22,12 +22,12 @@ urlpatterns = [
     ),
     path(
         "project/<slug:project_slug>/services/",
-        CreateListServices.as_view({"post": "create", "get": "list", "patch": "update"}),
+        CreateListUpdateServices.as_view({"post": "create", "get": "list", "patch": "update"}),
         name="services",
     ),
     path(
         "project/<slug:project_slug>/services/can-create",
-        CreateListServices.as_view({"get": "can_create"}),
+        CreateListUpdateServices.as_view({"get": "can_create"}),
         name="services_create_check",
     ),
     path(

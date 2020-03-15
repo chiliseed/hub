@@ -36,6 +36,7 @@ from aws_environments.serializers import (
     CreateBuildWorkerSerializer,
     BuildWorkerSerializer,
     ServiceDeploymentSerializer)
+from aws_environments.utils import check_if_service_can_be_created
 from infra_executors.utils import get_boto3_client
 
 logger = logging.getLogger(__name__)
@@ -146,7 +147,7 @@ class CreateListProject(ModelViewSet):
         )
 
 
-class CreateListServices(ModelViewSet):
+class CreateListUpdateServices(ModelViewSet):
     serializer_class = ServiceSerializer
     lookup_url_kwarg = "project_slug"
     lookup_field = "slug"
@@ -154,6 +155,7 @@ class CreateListServices(ModelViewSet):
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
         ctx["user"] = self.request.user
+        ctx["project"] = self.get_object()
         return ctx
 
     def get_queryset(self):
@@ -170,6 +172,10 @@ class CreateListServices(ModelViewSet):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        is_valid, error_reason = check_if_service_can_be_created(serializer.validated_data, project)
+        if not is_valid:
+            return Response(data=dict(detail=error_reason), status=status.HTTP_400_BAD_REQUEST)
 
         service = serializer.save(project=project)
 
@@ -255,43 +261,12 @@ class CreateListServices(ModelViewSet):
         serializer = ServiceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        logger.info("Checking if service with this name/subdomain already exists")
-        service_exists = Service.objects.filter(
-            Q(project=project),
-            Q(is_deleted=False),
-            Q(name=serializer.validated_data["name"])
-            | Q(subdomain=serializer.validated_data["subdomain"]),
-        ).exists()
-        is_port_taken = Service.objects.filter(
-            Q(project=project),
-            Q(is_deleted=False),
-            Q(container_port=serializer.validated_data["container_port"])
-            | Q(alb_port_http=serializer.validated_data["alb_port_http"])
-            | Q(alb_port_https=serializer.validated_data["alb_port_https"]),
-        ).exists()
+        is_valid, error_reason = check_if_service_can_be_created(serializer.validated_data, project)
 
-        if service_exists:
-            logger.info(
-                "Service with this name/subdomain already exists. name=%s subdomain=%s project_id=%s",
-                serializer.validated_data["name"],
-                serializer.validated_data["subdomain"],
-                project.id,
-            )
+        if not is_valid:
             response = dict(
                 can_create=False,
-                reason="Service with this name/subdomain already exists.",
-            )
-        elif is_port_taken:
-            logger.info(
-                "Ports are taken. container_port=%s alb_http_port=%s alb_http_ports=%s project_id=%s",
-                serializer.validated_data["container_port"],
-                serializer.validated_data["alb_port_http"],
-                serializer.validated_data["alb_port_https"],
-                project.id,
-            )
-            response = dict(
-                can_create=False,
-                reason="Your other services for this project already took those ports.",
+                reason=error_reason,
             )
         else:
             logger.info("OK to create this service. project_id=%s", project.id)

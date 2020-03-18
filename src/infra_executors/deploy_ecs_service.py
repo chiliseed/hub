@@ -36,9 +36,7 @@ class DeploymentConf:
 
 
 def put_task_definition(
-    creds: AwsCredentials,
-    params: GeneralConfiguration,
-    deploy_conf: DeploymentConf
+    creds: AwsCredentials, params: GeneralConfiguration, deploy_conf: DeploymentConf
 ) -> Any:
     """Pushes task definition for the specified service."""
     logger.info("Put ECS task definition for: %s", DEMO_APP)
@@ -53,7 +51,9 @@ def put_task_definition(
             {
                 "name": deploy_conf.service_name,
                 "image": f"{deploy_conf.repo_url}:{deploy_conf.version}",
-                "portMappings": [{"containerPort": deploy_conf.container_port, "protocol": "tcp"}],
+                "portMappings": [
+                    {"containerPort": deploy_conf.container_port, "protocol": "tcp"}
+                ],
                 "essential": True,
                 "logConfiguration": {
                     "logDriver": "awslogs",
@@ -98,7 +98,11 @@ def wait_for_service_scale(
 
         service = resp["services"][0]
         if task_definition_arn:
-            service = [d for d in service["deployments"] if d["taskDefinition"] == task_definition_arn][0]
+            service = [
+                d
+                for d in service["deployments"]
+                if d["taskDefinition"] == task_definition_arn
+            ][0]
 
         if service["runningCount"] == desired_count:
             logger.info(
@@ -121,11 +125,16 @@ def launch_task_in_cluster(
     creds: AwsCredentials, deploy_conf: DeploymentConf, task_definition: Any,
 ) -> Any:
     """Launch service in cluster."""
-    logger.info("Creating service for task definition: %s", task_definition["taskDefinition"]["taskDefinitionArn"])
+    logger.info(
+        "Creating service for task definition: %s",
+        task_definition["taskDefinition"]["taskDefinitionArn"],
+    )
     client = get_boto3_client("ecs", creds)
     try:
         logger.info("Checking existing services")
-        resp = client.describe_services(cluster=deploy_conf.ecs_cluster, services=[deploy_conf.service_name])
+        resp = client.describe_services(
+            cluster=deploy_conf.ecs_cluster, services=[deploy_conf.service_name]
+        )
         if resp["services"]:
             logger.info("Updating existing %s service", deploy_conf.service_name)
             client.update_service(
@@ -165,23 +174,31 @@ def launch_task_in_cluster(
 
 
 def deploy_ecs_service(
-    creds: AwsCredentials,
-    params: GeneralConfiguration,
-    deploy_conf: DeploymentConf
+    creds: AwsCredentials, params: GeneralConfiguration, deploy_conf: DeploymentConf
 ) -> None:
     """Deploys latest demo application."""
-    logger.info("Creating task definition service %s to cluster: %s", deploy_conf.service_name, deploy_conf.ecs_cluster)
+    logger.info(
+        "Creating task definition service %s to cluster: %s",
+        deploy_conf.service_name,
+        deploy_conf.ecs_cluster,
+    )
     task_definition = put_task_definition(creds, params, deploy_conf)
     launch_task_in_cluster(creds, deploy_conf, task_definition)
-    wait_for_service_scale(creds, deploy_conf.ecs_cluster, deploy_conf.service_name, 1, task_definition_arn=task_definition["taskDefinition"]["taskDefinitionArn"])
+    wait_for_service_scale(
+        creds,
+        deploy_conf.ecs_cluster,
+        deploy_conf.service_name,
+        1,
+        task_definition_arn=task_definition["taskDefinition"]["taskDefinitionArn"],
+    )
     logger.info("Service %s deployed", deploy_conf.service_name)
 
 
-def remove_ecs_service(
-    creds: AwsCredentials, deploy_conf: DeploymentConf
-) -> None:
+def remove_ecs_service(creds: AwsCredentials, deploy_conf: DeploymentConf) -> None:
     """Remove ecs service from cluster."""
-    logger.info("Removing %s from cluster %s", deploy_conf.service_name, deploy_conf.ecs_cluster)
+    logger.info(
+        "Removing %s from cluster %s", deploy_conf.service_name, deploy_conf.ecs_cluster
+    )
     client = get_boto3_client("ecs", creds)
 
     logger.info("Get task definitions: %s", deploy_conf.service_name)
@@ -203,10 +220,14 @@ def remove_ecs_service(
             },
             forceNewDeployment=True,
         )
-        wait_for_service_scale(creds, deploy_conf.ecs_cluster, deploy_conf.service_name, 0)
+        wait_for_service_scale(
+            creds, deploy_conf.ecs_cluster, deploy_conf.service_name, 0
+        )
 
     logger.info("Deleting service %s", deploy_conf.service_name)
-    client.delete_service(cluster=deploy_conf.ecs_cluster, service=deploy_conf.service_name, force=True)
+    client.delete_service(
+        cluster=deploy_conf.ecs_cluster, service=deploy_conf.service_name, force=True
+    )
 
     logger.info("Removing task definitions")
     for task_definition in task_definitions["taskDefinitionArns"]:

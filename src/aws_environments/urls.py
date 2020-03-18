@@ -9,7 +9,9 @@ from aws_environments.views import (
     CreateListUpdateServices,
     CreateWorker,
     WorkerDetails,
-    DeployService)
+    DeployService,
+    EnvironmentVariables,
+)
 
 app_name = "aws_env"
 urlpatterns = [
@@ -22,19 +24,26 @@ urlpatterns = [
     ),
     path(
         "project/<slug:project_slug>/services/",
-        CreateListUpdateServices.as_view({"post": "create", "get": "list", "patch": "update"}),
+        CreateListUpdateServices.as_view(
+            {"post": "create", "get": "list", "patch": "update"}
+        ),
         name="services",
-    ),
-    path(
-        "project/<slug:project_slug>/services/can-create",
-        CreateListUpdateServices.as_view({"get": "can_create"}),
-        name="services_create_check",
     ),
     path(
         "service/<slug:slug>/build", CreateWorker.as_view(), name="launch_build_worker"
     ),
+    path("service/<slug:slug>/deploy", DeployService.as_view(), name="deploy_service"),
     path(
-        "service/<slug:slug>/deploy", DeployService.as_view(), name="deploy_service"
+        "service/<slug:slug>/environment-variables/",
+        EnvironmentVariables.as_view({"get": "list"}),
+        name="list_service_env_vars",
+    ),
+    path(
+        "service/<slug:slug>/environment-variables/<slug:key_slug>",
+        EnvironmentVariables.as_view(
+            {"post": "create", "patch": "update", "delete": "destroy"}
+        ),
+        name="service_env_vars",
     ),
     path("worker/<slug:slug>", WorkerDetails.as_view(), name="worker"),
     path(

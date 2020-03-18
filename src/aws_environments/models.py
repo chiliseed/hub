@@ -7,7 +7,7 @@ import pytz
 from django.contrib.auth import get_user_model
 from django.core.validators import URLValidator
 from django.db import models
-from fernet_fields import EncryptedTextField
+from fernet_fields import EncryptedTextField, EncryptedCharField
 
 from aws_environments.constants import Regions, InfraStatus
 from common.models import BaseModel
@@ -377,6 +377,26 @@ class Service(BaseModel):
         return self.project.is_ready() and self.last_status.status == InfraStatus.ready
 
 
+class EnvironmentVariable(BaseModel):
+    """Manages service container env vars."""
+
+    organization = models.ForeignKey(
+        "organizations.Organization", related_name="env_vars", on_delete=models.CASCADE,
+    )
+    service = models.ForeignKey(
+        Service, related_name="env_vars", on_delete=models.CASCADE
+    )
+    key_name = models.CharField(max_length=140)
+    key_value = EncryptedCharField(max_length=250, default="")
+    is_secret = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ["service_id", "key_name"]
+
+    def __str__(self):
+        return f"#{self.id} | Service: {self.service} | Key: {self.key_name}"
+
+
 class BuildWorker(BaseModel):
     """Manages deployment build workers.
 
@@ -411,10 +431,14 @@ class ServiceDeployment(BaseModel):
         related_name="service_deployments",
         on_delete=models.CASCADE,
         null=False,
-        blank=True
+        blank=True,
     )
     service = models.ForeignKey(
-        Service, related_name="deployments", on_delete=models.CASCADE, null=False, blank=True
+        Service,
+        related_name="deployments",
+        on_delete=models.CASCADE,
+        null=False,
+        blank=True,
     )
     deployed_at = models.DateTimeField(null=True, blank=True)
     version = models.CharField(max_length=20, null=False, blank=False)
@@ -427,6 +451,7 @@ class ServiceDeployment(BaseModel):
         self.is_success = is_success
         self.deployed_at = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.save(update_fields=["is_success", "deployed_at"])
+
 
 class ExecutionLog(BaseModel):
     """Manages infra executor logs for a specific change."""

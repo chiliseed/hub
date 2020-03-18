@@ -14,6 +14,7 @@ from aws_environments.models import (
     Service,
     ServiceConf,
     ServiceDeployment,
+    EnvironmentVariable,
 )
 
 
@@ -135,7 +136,9 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         payload = {**validated_data}
-        payload["name"] = validated_data["name"].translate({ord(c): None for c in string.whitespace})
+        payload["name"] = validated_data["name"].translate(
+            {ord(c): None for c in string.whitespace}
+        )
         payload["configuration"] = ServiceConf(
             acm_arn="", health_check_protocol="", ecr_repo_name="",
         ).to_str()
@@ -171,3 +174,16 @@ class ServiceDeploymentSerializer(serializers.ModelSerializer):
         model = ServiceDeployment
         fields = ("slug", "deployed_at", "version", "is_success")
         read_only_fields = ("slug", "deployed_at", "is_success")
+
+
+class EnvironmentVariableSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EnvironmentVariable
+        fields = ("slug", "key_name", "key_value", "is_secret")
+        read_only_fields = ("slug",)
+
+    def get_key_value(self, obj):
+        if obj.is_secret:
+            return "***********************"
+        else:
+            return obj.key_value

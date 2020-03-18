@@ -6,6 +6,7 @@ from aws_environments.models import (
     ExecutionLog,
     Service,
     BuildWorker,
+    EnvironmentVariable,
 )
 
 
@@ -114,8 +115,29 @@ class BuildWorkerAdmin(admin.ModelAdmin):
         return obj.instance_id is not None
 
 
+class EnvironmentVariableAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "slug",
+        "organization",
+        "service",
+        "key_name",
+    )
+    search_fields = (
+        "id",
+        "slug",
+        "key_name",
+    )
+    readonly_fields = (
+        "slug",
+        "id",
+    )
+    list_display_links = ("id", "service", "organization")
+
+
 admin.site.register(Environment, EnvironmentAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(ExecutionLog, ExecLogAdmin)
 admin.site.register(Service, ServiceAdmin)
 admin.site.register(BuildWorker, BuildWorkerAdmin)
+admin.site.register(EnvironmentVariable, EnvironmentVariableAdmin)

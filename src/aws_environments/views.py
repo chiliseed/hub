@@ -9,6 +9,7 @@ from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
     RetrieveAPIView,
+    get_object_or_404,
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -19,14 +20,18 @@ from aws_environments.jobs import (
     create_project_infra,
     create_service_infra,
     launch_build_worker,
-    deploy_version_to_service, update_service_infra)
+    deploy_version_to_service,
+    update_service_infra,
+)
 from aws_environments.models import (
     Environment,
     ExecutionLog,
     Project,
     Service,
     BuildWorker,
-    ServiceDeployment)
+    ServiceDeployment,
+    EnvironmentVariable,
+)
 from aws_environments.serializers import (
     CreateEnvironmentSerializer,
     EnvironmentSerializer,
@@ -35,7 +40,9 @@ from aws_environments.serializers import (
     ServiceSerializer,
     CreateBuildWorkerSerializer,
     BuildWorkerSerializer,
-    ServiceDeploymentSerializer)
+    ServiceDeploymentSerializer,
+    EnvironmentVariableSerializer,
+)
 from aws_environments.utils import check_if_service_can_be_created
 from infra_executors.utils import get_boto3_client
 
@@ -173,9 +180,13 @@ class CreateListUpdateServices(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        is_valid, error_reason = check_if_service_can_be_created(serializer.validated_data, project)
+        is_valid, error_reason = check_if_service_can_be_created(
+            serializer.validated_data, project
+        )
         if not is_valid:
-            return Response(data=dict(detail=error_reason), status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                data=dict(detail=error_reason), status=status.HTTP_400_BAD_REQUEST
+            )
 
         service = serializer.save(project=project)
 
@@ -209,18 +220,19 @@ class CreateListUpdateServices(ModelViewSet):
         if not payload.get("slug"):
             return Response(
                 data={"detail": "Missing service slug"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        old_service_slug = payload['slug']
-        old_service = Service.objects.filter(slug=old_service_slug, is_deleted=False).first()
+        old_service_slug = payload["slug"]
+        old_service = Service.objects.filter(
+            slug=old_service_slug, is_deleted=False
+        ).first()
         if not old_service:
             return Response(
-                data={"detail": "Service not found"},
-                status=status.HTTP_404_NOT_FOUND,
+                data={"detail": "Service not found"}, status=status.HTTP_404_NOT_FOUND,
             )
 
-        del payload['slug']
+        del payload["slug"]
 
         serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
@@ -255,24 +267,6 @@ class CreateListUpdateServices(ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    def can_create(self, request, *args, **kwargs):
-        project = self.get_object()
-        logger.info("Checking if service can be created")
-        serializer = ServiceSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        is_valid, error_reason = check_if_service_can_be_created(serializer.validated_data, project)
-
-        if not is_valid:
-            response = dict(
-                can_create=False,
-                reason=error_reason,
-            )
-        else:
-            logger.info("OK to create this service. project_id=%s", project.id)
-            response = dict(can_create=True, reason=None)
-        return Response(data=response, status=status.HTTP_200_OK)
-
 
 class CreateWorker(CreateAPIView):
     serializer_class = CreateBuildWorkerSerializer
@@ -305,14 +299,18 @@ class CreateWorker(CreateAPIView):
             try:
                 resp = ec2_client.describe_instance_status(
                     Filters=[
-                        {"Name": "instance-state-code", "Values": ["16"]},  # running state
+                        {
+                            "Name": "instance-state-code",
+                            "Values": ["16"],
+                        },  # running state
                     ],
                     InstanceIds=[worker.instance_id,],
                 )
                 if len(resp["InstanceStatuses"]) == 1:
                     logger.info("Worker is still alive. worker_id=%s", worker.id)
                     return Response(
-                        data=dict(build=worker.slug, log=None), status=status.HTTP_200_OK
+                        data=dict(build=worker.slug, log=None),
+                        status=status.HTTP_200_OK,
                     )
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code")
@@ -358,7 +356,9 @@ class DeployService(CreateAPIView):
     lookup_url_kwarg = "slug"
 
     def get_queryset(self):
-        return Service.objects.filter(organization=self.request.user.organization, is_deleted=False)
+        return Service.objects.filter(
+            organization=self.request.user.organization, is_deleted=False
+        )
 
     def post(self, request, *args, **kwargs):
         service = self.get_object()
@@ -389,3 +389,42 @@ class DeployService(CreateAPIView):
             data=dict(deployment=deployment.slug, log=exec_log.slug),
             status=status.HTTP_201_CREATED,
         )
+
+
+class EnvironmentVariables(ModelViewSet):
+    serializer_class = EnvironmentVariableSerializer
+    lookup_url_kwarg = "slug"
+    lookup_field = "slug"
+
+    def get_queryset(self):
+        return Service.objects.filter(
+            organization=self.request.user.organization, is_deleted=False
+        )
+
+    def perform_create(self, serializer):
+        service = self.get_object()
+        serializer.save(organization=self.request.user.organization, service=service)
+
+    def list(self, request, *args, **kwargs):
+        service = self.get_object()
+        serializer = self.get_serializer(service.env_vars.all(), many=True)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        service = self.get_object()
+        env_var = get_object_or_404(
+            service.env_vars.all(), slug=self.kwargs["key_slug"]
+        )
+        partial = kwargs.pop("partial", False)
+        serializer = self.get_serializer(env_var, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        service = self.get_object()
+        env_var = get_object_or_404(
+            service.env_vars.all(), slug=self.kwargs["key_slug"]
+        )
+        env_var.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

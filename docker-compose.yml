@@ -68,8 +68,10 @@ services:
       - .env
     links:
       - db
+      - rabbitmq
     depends_on:
       - db
+      - rabbitmq
     volumes:
       - ./src:/app
     networks:

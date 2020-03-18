@@ -8,3 +8,7 @@ echo "CHILISEED_VERSION=${code_version}" >> /etc/environment
 echo "DOCKERFILE_TARGET=${dockerfile_target}" >> /etc/environment
 echo "CHILISEED_SERVICE_NAME=${service_name}" >> /etc/environment
 echo "CHILISEED_ECR_URL=${ecr_url}" >> /etc/environment
+echo "CHILISEED_LOG=DEBUG" >> /etc/environment
+
+curl -O https://chiliseed-tools.s3.us-east-2.amazonaws.com/chiliseed-build-worker-0.1.0.tar.gz
+tar -xvzf chiliseed-build-worker-0.1.0.tar.gz -C /home/ubuntu

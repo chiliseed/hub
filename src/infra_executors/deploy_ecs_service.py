@@ -48,7 +48,7 @@ def put_task_definition(
         family=deploy_conf.service_name,
         executionRoleArn=deploy_conf.ecs_executor_role_arn,
         cpu="128",
-        memory="100",
+        memory="150",
         containerDefinitions=[
             {
                 "name": deploy_conf.service_name,
@@ -85,6 +85,7 @@ def wait_for_service_scale(
     service_name: str,
     desired_count: int,
     timeout_seconds: int = 10,
+    task_definition_arn: str = None,
 ) -> None:
     """Wait for service scale."""
     client = get_boto3_client("ecs", creds)
@@ -92,10 +93,14 @@ def wait_for_service_scale(
     while waited_seconds < timeout_seconds:
         logger.info("Checking if service scaled to %s", desired_count)
         resp = client.describe_services(cluster=cluster, services=[service_name])
-
         if not resp["services"]:
             raise Exception("Service not found")
-        if resp["service"][0]["runningCount"] == desired_count:
+
+        service = resp["services"][0]
+        if task_definition_arn:
+            service = [d for d in service["deployments"] if d["taskDefinition"] == task_definition_arn][0]
+
+        if service["runningCount"] == desired_count:
             logger.info(
                 "Services %s scaled to desired count of %d",
                 service_name,
@@ -168,6 +173,7 @@ def deploy_ecs_service(
     logger.info("Creating task definition service %s to cluster: %s", deploy_conf.service_name, deploy_conf.ecs_cluster)
     task_definition = put_task_definition(creds, params, deploy_conf)
     launch_task_in_cluster(creds, deploy_conf, task_definition)
+    wait_for_service_scale(creds, deploy_conf.ecs_cluster, deploy_conf.service_name, 1, task_definition_arn=task_definition["taskDefinition"]["taskDefinitionArn"])
     logger.info("Service %s deployed", deploy_conf.service_name)
 
 

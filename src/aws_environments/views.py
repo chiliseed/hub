@@ -245,7 +245,7 @@ class CreateListUpdateServices(ModelViewSet):
         )
 
     def list(self, request, *args, **kwargs):
-        params = dict(project=self.get_object())
+        params = dict(project=self.get_object(), is_deleted=False)
         if request.query_params.get("name"):
             params["name__iexact"] = self.request.query_params["name"]
         return Response(
@@ -358,7 +358,7 @@ class DeployService(CreateAPIView):
     lookup_url_kwarg = "slug"
 
     def get_queryset(self):
-        return Service.objects.filter(organization=self.request.user.organization)
+        return Service.objects.filter(organization=self.request.user.organization, is_deleted=False)
 
     def post(self, request, *args, **kwargs):
         service = self.get_object()

@@ -11,3 +11,5 @@ __pycache__/
 *.log
 *.mypy_cache
 key_pairs/
+
+build_worker/target/

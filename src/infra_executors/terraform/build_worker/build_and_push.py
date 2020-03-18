@@ -86,7 +86,9 @@ def do_commands(commands):
 
     Returns
     -------
-    None
+    int
+        cli command exit code.
+        0 - command executed successfully
     """
     start_time = time.time()
     for cmd in commands:

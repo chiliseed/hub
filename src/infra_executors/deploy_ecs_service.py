@@ -2,7 +2,7 @@
 import logging
 from dataclasses import dataclass
 from time import sleep
-from typing import Any
+from typing import Any, Optional, List
 
 import botocore.exceptions  # type: ignore
 
@@ -25,6 +25,12 @@ class DeployError(Exception):
 
 
 @dataclass
+class SecretEnvVar:
+    name: str
+    value_from: str
+
+
+@dataclass
 class DeploymentConf:
     ecs_cluster: str
     ecs_executor_role_arn: str
@@ -33,6 +39,7 @@ class DeploymentConf:
     version: str
     container_port: int
     target_group_arn: str
+    secrets: Optional[List[SecretEnvVar]]
 
 
 def put_task_definition(
@@ -42,6 +49,11 @@ def put_task_definition(
     logger.info("Put ECS task definition for: %s", DEMO_APP)
 
     client = get_boto3_client("ecs", creds)
+    if deploy_conf.secrets:
+        secrets = [dict(name=s.name, valueFrom=s.value_from) for s in deploy_conf.secrets]
+    else:
+        secrets = []
+
     task_definition = client.register_task_definition(
         family=deploy_conf.service_name,
         executionRoleArn=deploy_conf.ecs_executor_role_arn,
@@ -54,6 +66,7 @@ def put_task_definition(
                 "portMappings": [
                     {"containerPort": deploy_conf.container_port, "protocol": "tcp"}
                 ],
+                "secrets": secrets,
                 "essential": True,
                 "logConfiguration": {
                     "logDriver": "awslogs",

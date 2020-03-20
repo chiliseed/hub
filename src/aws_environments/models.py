@@ -15,7 +15,7 @@ from infra_executors.alb import HTTP, ALBConfigs, OpenPort
 from infra_executors.constants import AwsCredentials, GeneralConfiguration, KEYS_DIR
 from infra_executors.ecr import ECRConfigs
 from infra_executors.route53 import Route53Configuration, CnameSubDomain
-
+from infra_executors.utils import get_boto3_client
 
 User = get_user_model()
 
@@ -375,6 +375,23 @@ class Service(BaseModel):
 
     def is_ready(self):
         return self.project.is_ready() and self.last_status.status == InfraStatus.ready
+
+    def get_ssm_prefix(self):
+        """Returns prefix for parameter store env vars."""
+        return f"/{self.project.environment.name}/{self.project.name}/{self.name}/"
+
+    def get_env_vars(self):
+        client = get_boto3_client("ssm", self.project.environment.get_creds())
+        params = client.describe_parameters(
+            ParameterFilters={"Key": "Name", "Option": "BeginsWith", "Value": self.get_ssm_prefix()})
+        env_vars = []
+        for param in params["Parameters"]:
+            env_vars.append(dict(
+                name=param['Name'].split("/")[-1],
+                value_from=param["Name"]
+            ))
+
+        return env_vars
 
 
 class EnvironmentVariable(BaseModel):

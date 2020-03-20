@@ -274,7 +274,7 @@ class CreateWorker(CreateAPIView):
     lookup_url_kwarg = "slug"
 
     def get_queryset(self):
-        return Service.objects.filter(organization=self.request.user.organization)
+        return Service.objects.filter(organization=self.request.user.organization).select_related("project", "project__environment")
 
     def post(self, request, *args, **kwargs):
         service = self.get_object()
@@ -294,7 +294,7 @@ class CreateWorker(CreateAPIView):
         )
         if not created:
             ec2_client = get_boto3_client(
-                "ec2", worker.service.project.environment.get_creds()
+                "ec2", service.project.environment.get_creds()
             )
             try:
                 resp = ec2_client.describe_instance_status(
@@ -399,32 +399,47 @@ class EnvironmentVariables(ModelViewSet):
     def get_queryset(self):
         return Service.objects.filter(
             organization=self.request.user.organization, is_deleted=False
+        ).select_related("project__environment", "project")
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = self.get_object()
+
+        client = get_boto3_client("ssm", service.project.environment.get_creds())
+
+        key_name = f"{service.get_ssm_prefix()}{serializer.validated_data['key_name']}"
+        logger.info("Adding new variable: %s", key_name)
+        client.put_parameter(
+            Name=key_name,
+            Value=serializer.validated_data['key_value'],
+            Type="SecureString" if serializer.validated_data.get("is_secure", True) else "String",
+            Overwrite=True,
         )
 
-    def perform_create(self, serializer):
-        service = self.get_object()
-        serializer.save(organization=self.request.user.organization, service=service)
+        headers = self.get_success_headers(serializer.data)
+        return Response(dict(key_name=key_name), status=status.HTTP_201_CREATED, headers=headers)
 
     def list(self, request, *args, **kwargs):
         service = self.get_object()
-        serializer = self.get_serializer(service.env_vars.all(), many=True)
-        return Response(serializer.data)
-
-    def update(self, request, *args, **kwargs):
-        service = self.get_object()
-        env_var = get_object_or_404(
-            service.env_vars.all(), slug=self.kwargs["key_slug"]
-        )
-        partial = kwargs.pop("partial", False)
-        serializer = self.get_serializer(env_var, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+        client = get_boto3_client("ssm", service.project.environment.get_creds())
+        params = client.describe_parameters(ParameterFilters={"Key": "Name", "Option": "BeginsWith", "Value": service.get_ssm_prefix()})
+        if params['Parameters']:
+            response = [
+                dict(key_name=key['Name'], last_modified=key["LastModifiedDate"], description=key["Description"])
+                for key in params['Parameters']
+            ]
+        else:
+            response = []
+        return Response(response)
 
     def destroy(self, request, *args, **kwargs):
+        if not request.data['key_name']:
+            return Response(data=dict(detail="Must provide key name"), status=status.HTTP_400_BAD_REQUEST)
+
         service = self.get_object()
-        env_var = get_object_or_404(
-            service.env_vars.all(), slug=self.kwargs["key_slug"]
-        )
-        env_var.delete()
+        client = get_boto3_client("ssm", service.project.environment.get_creds())
+
+        key_name = f"{service.get_ssm_prefix()}{request.data['key_name']}"
+        client.delete_parameter(Name=key_name)
         return Response(status=status.HTTP_204_NO_CONTENT)

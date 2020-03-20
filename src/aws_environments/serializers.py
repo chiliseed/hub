@@ -176,14 +176,7 @@ class ServiceDeploymentSerializer(serializers.ModelSerializer):
         read_only_fields = ("slug", "deployed_at", "is_success")
 
 
-class EnvironmentVariableSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EnvironmentVariable
-        fields = ("slug", "key_name", "key_value", "is_secret")
-        read_only_fields = ("slug",)
-
-    def get_key_value(self, obj):
-        if obj.is_secret:
-            return "***********************"
-        else:
-            return obj.key_value
+class EnvironmentVariableSerializer(serializers.Serializer):
+    key_name = serializers.CharField()
+    key_value = serializers.CharField()
+    is_secret = serializers.BooleanField(default=True)

@@ -14,7 +14,7 @@ from infra_executors.deploy_ecs_service import (
     deploy_ecs_service,
     DeploymentConf,
     remove_ecs_service,
-)
+    SecretEnvVar)
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
 from infra_executors.ecs_service import (
     create_acm_for_service,
@@ -399,6 +399,12 @@ def remove_build_worker(build_worker_id, exec_log_id):
 def get_deployment_conf(deployment):
     service_conf = deployment.service.conf()
     project_conf = deployment.service.project.conf()
+    env_vars = []
+    for env_var in deployment.service.get_env_vars():
+        env_vars.append(SecretEnvVar(**env_var))
+
+    logger.debug("env vars are: {}", env_vars)
+
     return DeploymentConf(
         ecs_cluster=project_conf.ecs_cluster,
         ecs_executor_role_arn=project_conf.ecs_executor_role_arn,
@@ -407,6 +413,7 @@ def get_deployment_conf(deployment):
         version=deployment.version,
         container_port=deployment.service.container_port,
         target_group_arn=service_conf.target_group_arn,
+        secrets=env_vars
     )
 
 

@@ -35,14 +35,7 @@ urlpatterns = [
     path("service/<slug:slug>/deploy", DeployService.as_view(), name="deploy_service"),
     path(
         "service/<slug:slug>/environment-variables/",
-        EnvironmentVariables.as_view({"get": "list"}),
-        name="list_service_env_vars",
-    ),
-    path(
-        "service/<slug:slug>/environment-variables/<slug:key_slug>",
-        EnvironmentVariables.as_view(
-            {"post": "create", "patch": "update", "delete": "destroy"}
-        ),
+        EnvironmentVariables.as_view({"get": "list", "post": "create", "delete": "destroy"}),
         name="service_env_vars",
     ),
     path("worker/<slug:slug>", WorkerDetails.as_view(), name="worker"),

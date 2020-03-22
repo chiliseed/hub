@@ -121,6 +121,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             "alb_port_https",
             "health_check_endpoint",
             "ecr_repo_url",
+            "has_web_interface",
         )
         read_only_fields = ("slug",)
 

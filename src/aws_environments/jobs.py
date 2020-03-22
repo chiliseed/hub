@@ -313,6 +313,7 @@ def launch_build_worker(build_worker_id, exec_log_id):
         env_name=worker.service.project.environment.name,
         code_version=exec_log.get_params()["version"],
         service_name=worker.service.name,
+        dockerfile=worker.service.default_dockerfile_path,
         ecr_url=worker.service.conf().ecr_repo_url,
         valid_until=(datetime.utcnow() + timedelta(minutes=5))
         .replace(tzinfo=timezone.utc)

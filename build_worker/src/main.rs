@@ -60,6 +60,7 @@ fn main() {
     let here = env::current_dir().unwrap();
     let env = env::var("CHILISEED_ENV").unwrap();
     let version = env::var("CHILISEED_VERSION").unwrap();
+    let dockerfile = env::var("CHILISEED_DOCKERFILE").unwrap();
     let dockerfile_target = match env::var("DOCKERFILE_TARGET") {
         Ok(val) => Some(val),
         Err(err) => {
@@ -100,11 +101,11 @@ fn main() {
 
     let mut build = Vec::new();
     if let Some(dockerfile_target_state) = dockerfile_target {
-        let docker_build = format!("docker build --target {} -t {} {}", dockerfile_target_state, build_version, DEPLOYMENT_ROOT);
+        let docker_build = format!("docker build --target {} -t {} -f {} {}", dockerfile_target_state, build_version, dockerfile, DEPLOYMENT_ROOT);
         build.push(docker_build.clone());
         build.extend(push_image.iter().cloned());
     } else {
-        build.push(format!("docker build -t {} {}", build_version, DEPLOYMENT_ROOT));
+        build.push(format!("docker build -t {} -f {} {}", build_version, dockerfile, DEPLOYMENT_ROOT));
         build.extend(push_image.iter().cloned());
     }
 

@@ -33,6 +33,12 @@ variable "dockerfile_target" {
   default = ""
 }
 
+variable "dockerfile" {
+  type    = string
+  default = ""
+  description = "Path from project root to desired dockerfile for the service."
+}
+
 variable "service_name" {
   type = string
 }

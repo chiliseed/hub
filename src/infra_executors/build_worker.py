@@ -15,6 +15,7 @@ class BuildWorkerConfigs(NamedTuple):
     env_name: str
     code_version: str
     service_name: str
+    dockerfile: str
     ecr_url: str
     valid_until: str
     dockerfile_target: str = ""

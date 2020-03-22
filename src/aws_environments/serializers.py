@@ -122,6 +122,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             "health_check_endpoint",
             "ecr_repo_url",
             "has_web_interface",
+            "default_dockerfile_path",
         )
         read_only_fields = ("slug",)
 

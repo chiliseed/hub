@@ -335,6 +335,7 @@ class Service(BaseModel):
     name = models.CharField(max_length=100, null=False, blank=False)
 
     has_web_interface = models.BooleanField(default=True)
+    default_dockerfile_path = models.CharField(max_length=100, default="./Dockerfile")
 
     subdomain = models.CharField(max_length=50, null=True, blank=True)
     container_port = models.PositiveIntegerField(null=True, blank=True)

@@ -185,7 +185,7 @@ class CreateListUpdateServices(ModelViewSet):
                 data=dict(detail=error_reason), status=status.HTTP_400_BAD_REQUEST
             )
 
-        service = serializer.save(project=project)
+        service = serializer.save(project=project, environment=project.environment, organization=request.user.organization)
 
         exec_log = ExecutionLog.register(
             self.request.user.organization,
@@ -289,6 +289,7 @@ class CreateWorker(CreateAPIView):
         worker, created = BuildWorker.objects.get_or_create(
             service=service,
             organization=self.request.user.organization,
+            project=service.project,
             is_deleted=False,
         )
         if not created:
@@ -321,7 +322,10 @@ class CreateWorker(CreateAPIView):
         worker.save(update_fields=["is_deleted", "deleted_at"])
 
         worker = BuildWorker.objects.create(
-            service=service, organization=self.request.user.organization
+            service=service,
+            organization=self.request.user.organization,
+            project=service.project,
+            is_deleted=False,
         )
 
         exec_log = ExecutionLog.register(
@@ -355,7 +359,7 @@ class DeployService(CreateAPIView):
     lookup_url_kwarg = "slug"
 
     def get_queryset(self):
-        return Service.objects.filter(
+        return Service.objects.select_related("project", "environment").filter(
             organization=self.request.user.organization, is_deleted=False
         )
 
@@ -371,7 +375,9 @@ class DeployService(CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         deployment = ServiceDeployment.objects.create(
-            organization=self.request.user.organization,
+            organization_id=self.request.user.organization_id,
+            environment_id=service.environment_id,
+            project_id=service.project_id,
             service=service,
             version=serializer.validated_data["version"],
         )
@@ -438,5 +444,10 @@ class EnvironmentVariables(ModelViewSet):
         client = get_boto3_client("ssm", service.project.environment.get_creds())
 
         key_name = f"{service.get_ssm_prefix()}{request.data['key_name']}"
-        client.delete_parameter(Name=key_name)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        try:
+            client.delete_parameter(Name=key_name)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception:
+            logger.exception("Failed to delete env vars: %s", key_name)
+            return Response(data={"detail": "Error deleting key. Does this key exist? Check key name and try again."},
+                            status=status.HTTP_400_BAD_REQUEST)

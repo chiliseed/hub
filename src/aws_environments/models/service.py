@@ -4,13 +4,14 @@ from datetime import datetime, timezone
 
 from django.contrib.auth import get_user_model
 from django.db import models
-from fernet_fields import EncryptedTextField, EncryptedCharField
+from fernet_fields import EncryptedTextField
 
 from aws_environments.constants import InfraStatus
 from common.models import BaseModel
 from infra_executors.utils import get_boto3_client
 
 from .project import Project
+from .environment import Environment
 
 
 User = get_user_model()
@@ -66,6 +67,7 @@ class Service(BaseModel):
         null=False,
         blank=False,
     )
+    environment = models.ForeignKey(Environment, related_name="services", null=True, on_delete=models.CASCADE)
 
     name = models.CharField(max_length=100, null=False, blank=False)
 
@@ -143,26 +145,6 @@ class Service(BaseModel):
         return env_vars
 
 
-class EnvironmentVariable(BaseModel):
-    """Manages service container env vars."""
-
-    organization = models.ForeignKey(
-        "organizations.Organization", related_name="env_vars", on_delete=models.CASCADE,
-    )
-    service = models.ForeignKey(
-        Service, related_name="env_vars", on_delete=models.CASCADE
-    )
-    key_name = models.CharField(max_length=140)
-    key_value = EncryptedCharField(max_length=250, default="")
-    is_secret = models.BooleanField(default=True)
-
-    class Meta:
-        unique_together = ["service_id", "key_name"]
-
-    def __str__(self):
-        return f"#{self.id} | Service: {self.service} | Key: {self.key_name}"
-
-
 class ServiceDeployment(BaseModel):
     """Manages service deployments."""
 
@@ -180,6 +162,9 @@ class ServiceDeployment(BaseModel):
         null=False,
         blank=True,
     )
+    environment = models.ForeignKey(Environment, related_name="service_deployments", on_delete=models.CASCADE, null=True)
+    project = models.ForeignKey(Project, related_name="service_deployments", on_delete=models.CASCADE, null=True)
+
     deployed_at = models.DateTimeField(null=True, blank=True)
     version = models.CharField(max_length=20, null=False, blank=False)
     is_success = models.NullBooleanField(blank=True)

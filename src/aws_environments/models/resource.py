@@ -9,6 +9,7 @@ from aws_environments.constants import InfraStatus
 from common.models import BaseModel
 
 from .environment import Environment
+from .project import Project
 
 
 User = get_user_model()
@@ -28,8 +29,12 @@ class ResourceStatus(BaseModel):
 
 @dataclass
 class ResourceConf:
+    instance_type: str
+    allocated_storage: int = 5
     username: str = ""
     password: str = ""
+    address: str = ""
+    port: int = 0
 
     def to_str(self):
         return json.dumps(asdict(self))
@@ -51,6 +56,7 @@ class Resource(BaseModel):
     environment = models.ForeignKey(
         Environment, related_name="resources", on_delete=models.CASCADE
     )
+    project = models.ForeignKey(Project, related_name="resources", on_delete=models.PROTECT, null=True)
 
     identifier = models.CharField(max_length=150)
     name = models.CharField(max_length=150)
@@ -76,3 +82,10 @@ class Resource(BaseModel):
         status.save()
         self.last_status = self.statuses.all().order_by("created_at").last()
         self.save(update_fields=["last_status"])
+
+    def conf(self):
+        return ResourceConf(**json.loads(self.configuration))
+
+    def set_conf(self, resource_conf: ResourceConf):
+        self.configuration = resource_conf.to_str()
+        self.save(update_fields=["configuration"])

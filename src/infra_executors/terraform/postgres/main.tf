@@ -22,12 +22,16 @@ data "aws_subnet_ids" "private" {
 }
 
 resource "aws_security_group" "db" {
-  name        = "${var.environment}_db"
-  description = "Used in ${var.environment}"
+  name_prefix = "${var.environment}-${var.name}-db-"
+  description = "Managed by Chiliseed."
   vpc_id      = var.vpc_id
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
-    Name        = "${var.environment}_db"
+    Name        = "${var.environment}-db"
     Environment = var.environment
   }
 }
@@ -48,21 +52,20 @@ module "master" {
   identifier = var.identifier
 
   engine            = "postgres"
-  engine_version    = "11.5"
-  instance_type     = var.instance_type
+  engine_version    = "11.6"
+  instance_class    = var.instance_type
   allocated_storage = var.allocated_storage
   storage_encrypted = false
 
   major_engine_version = "11"
 
-  name        = var.name
-  name_prefix = var.environment
+  name = var.name
 
   username = var.username
   password = var.password
   port     = "5432"
 
-  security_group_ids = [aws_security_group.db.id]
+  vpc_security_group_ids = [aws_security_group.db.id]
 
   maintenance_window = "Mon:00:00-Mon:03:00"
   backup_window      = "03:00-06:00"
@@ -79,11 +82,6 @@ module "master" {
 
   # Database Deletion Protection
   deletion_protection = false
-
-  environment = var.environment
-
-  create_db_option_group    = true
-  create_db_parameter_group = false
 }
 
 
@@ -92,11 +90,11 @@ module "read-replica" {
 
   identifier = "${var.identifier}-read"
 
-  replicate_source_db = module.master.instance_id
+  replicate_source_db = module.master.this_db_instance_id
 
   engine            = "postgres"
-  engine_version    = "11.2"
-  instance_type     = var.instance_type
+  engine_version    = "11.6"
+  instance_class    = var.instance_type
   allocated_storage = var.allocated_storage
   storage_encrypted = false
 
@@ -105,7 +103,7 @@ module "read-replica" {
   password = ""
   port     = "5432"
 
-  security_group_ids = [aws_security_group.db.id]
+  vpc_security_group_ids = [aws_security_group.db.id]
 
   maintenance_window = "Tue:00:00-Tue:03:00"
   backup_window      = "03:00-06:00"
@@ -124,8 +122,5 @@ module "read-replica" {
   # Database Deletion Protection
   deletion_protection = false
 
-  environment = var.environment
-
-  # Don't need to specify for replica, will be taken from master
   major_engine_version = "11"
 }

@@ -51,6 +51,7 @@ services:
       - db
     volumes:
       - ./src:/app
+      - ./pytest.ini:/app/pytest.ini
     networks:
       - chiliseed
 

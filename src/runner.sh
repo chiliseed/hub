@@ -4,6 +4,9 @@ do
   sleep 5;
 done
 
+echo "Checking django setup"
+python manage.py check
+
 echo "Creating missing migrations"
 python manage.py makemigrations
 

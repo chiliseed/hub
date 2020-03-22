@@ -156,6 +156,12 @@ def create_service_infra(service_id, exec_log_id):
     )
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
 
+    if not service.has_web_interface:
+        service.set_status(InfraStatus.ready)
+        exec_log.mark_result(True)
+        logger.info("Service has no web interface. Skipping. service_id=%s exec_log_id=%s", service_id, exec_log_id)
+        return True
+
     creds = service.project.environment.get_creds()
     common_conf = service.project.get_common_conf(exec_log_id, service_id)
     r53_conf = service.project.get_r53_conf()
@@ -461,6 +467,14 @@ def update_service_infra(previous_service_id, new_service_id, exec_log_id):
     deployment = ServiceDeployment.objects.filter(
         service_id=previous_service_id
     ).latest("deployed_at")
+
+    if not deployment.service.has_web_interface:
+        logger.info("Service has no web interface. No changes to apply to infra. previous_service_id=%s service_id=%s exec_log_id=%s", previous_service_id, new_service_id, exec_log_id)
+        exec_log = ExecutionLog.objects.get(id=exec_log_id)
+        deployment.service.set_status(InfraStatus.ready)
+        exec_log.mark_result(True)
+        return
+
     if deployment:
         creds = deployment.service.project.environment.get_creds()
         remove_ecs_service(creds, get_deployment_conf(deployment))

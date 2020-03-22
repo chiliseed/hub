@@ -333,10 +333,13 @@ class Service(BaseModel):
     )
 
     name = models.CharField(max_length=100, null=False, blank=False)
-    subdomain = models.CharField(max_length=50, null=False, blank=False)
-    container_port = models.PositiveIntegerField(null=False, blank=False)
-    alb_port_http = models.PositiveIntegerField(null=False, blank=False)
-    alb_port_https = models.PositiveIntegerField(null=False, blank=False)
+
+    has_web_interface = models.BooleanField(default=True)
+
+    subdomain = models.CharField(max_length=50, null=True, blank=True)
+    container_port = models.PositiveIntegerField(null=True, blank=True)
+    alb_port_http = models.PositiveIntegerField(null=True, blank=True)
+    alb_port_https = models.PositiveIntegerField(null=True, blank=True)
     health_check_endpoint = models.CharField(max_length=150, default="/")
     configuration = EncryptedTextField(default="{}")
 

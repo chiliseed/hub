@@ -14,7 +14,6 @@ from aws_environments.models import (
     Service,
     ServiceConf,
     ServiceDeployment,
-    EnvironmentVariable,
 )
 
 

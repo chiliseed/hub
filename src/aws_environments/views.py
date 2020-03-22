@@ -3,13 +3,11 @@ from datetime import datetime, timezone
 
 from botocore.exceptions import ClientError
 from django.db import transaction
-from django.db.models import Q
 from rest_framework import status
 from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
     RetrieveAPIView,
-    get_object_or_404,
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -30,7 +28,6 @@ from aws_environments.models import (
     Service,
     BuildWorker,
     ServiceDeployment,
-    EnvironmentVariable,
 )
 from aws_environments.serializers import (
     CreateEnvironmentSerializer,

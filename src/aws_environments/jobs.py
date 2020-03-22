@@ -24,6 +24,7 @@ from infra_executors.ecs_service import (
 )
 from infra_executors.route53 import Route53Configuration
 from infra_executors.utils import get_boto3_client
+
 from .constants import InfraStatus
 from .models import (
     Environment,

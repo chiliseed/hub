@@ -3,6 +3,8 @@
 import aws_environments.models
 from django.db import migrations, models
 
+import aws_environments.models.validators
+
 
 class Migration(migrations.Migration):
 
@@ -16,7 +18,7 @@ class Migration(migrations.Migration):
             name="domain",
             field=models.CharField(
                 max_length=200,
-                validators=[aws_environments.models.OptionalSchemeURLValidator()],
+                validators=[aws_environments.models.validators.OptionalSchemeURLValidator()],
             ),
         ),
     ]

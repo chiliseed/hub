@@ -1,5 +1,4 @@
 import json
-from unittest.mock import patch
 
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -8,16 +7,12 @@ from aws_environments.constants import InfraStatus
 from aws_environments.models import (
     Environment,
     ExecutionLog,
-    Project,
-    ProjectStatus,
     Service,
 )
 from aws_environments.tests.factories import (
     EnvironmentFactory,
     ProjectFactory,
-    ServiceFactory,
 )
-from organizations.tests.factories import OrganizationFactory
 from users.tests.factories import UserFactory
 
 

@@ -50,7 +50,9 @@ def put_task_definition(
 
     client = get_boto3_client("ecs", creds)
     if deploy_conf.secrets:
-        secrets = [dict(name=s.name, valueFrom=s.value_from) for s in deploy_conf.secrets]
+        secrets = [
+            dict(name=s.name, valueFrom=s.value_from) for s in deploy_conf.secrets
+        ]
     else:
         secrets = []
 

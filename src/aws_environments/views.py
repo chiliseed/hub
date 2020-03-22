@@ -274,7 +274,9 @@ class CreateWorker(CreateAPIView):
     lookup_url_kwarg = "slug"
 
     def get_queryset(self):
-        return Service.objects.filter(organization=self.request.user.organization).select_related("project", "project__environment")
+        return Service.objects.filter(
+            organization=self.request.user.organization
+        ).select_related("project", "project__environment")
 
     def post(self, request, *args, **kwargs):
         service = self.get_object()
@@ -412,21 +414,28 @@ class EnvironmentVariables(ModelViewSet):
         logger.info("Adding new variable: %s", key_name)
         client.put_parameter(
             Name=key_name,
-            Value=serializer.validated_data['key_value'],
-            Type="SecureString" if serializer.validated_data.get("is_secure", True) else "String",
+            Value=serializer.validated_data["key_value"],
+            Type="SecureString"
+            if serializer.validated_data.get("is_secure", True)
+            else "String",
             Overwrite=True,
         )
 
         headers = self.get_success_headers(serializer.data)
-        return Response(dict(key_name=key_name), status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            dict(key_name=key_name), status=status.HTTP_201_CREATED, headers=headers
+        )
 
     def list(self, request, *args, **kwargs):
         service = self.get_object()
         return Response(service.get_env_vars())
 
     def destroy(self, request, *args, **kwargs):
-        if not request.data['key_name']:
-            return Response(data=dict(detail="Must provide key name"), status=status.HTTP_400_BAD_REQUEST)
+        if not request.data["key_name"]:
+            return Response(
+                data=dict(detail="Must provide key name"),
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         service = self.get_object()
         client = get_boto3_client("ssm", service.project.environment.get_creds())

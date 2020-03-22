@@ -14,7 +14,8 @@ from infra_executors.deploy_ecs_service import (
     deploy_ecs_service,
     DeploymentConf,
     remove_ecs_service,
-    SecretEnvVar)
+    SecretEnvVar,
+)
 from infra_executors.ecs_environment import create_global_parts, launch_project_infra
 from infra_executors.ecs_service import (
     create_acm_for_service,
@@ -159,7 +160,11 @@ def create_service_infra(service_id, exec_log_id):
     if not service.has_web_interface:
         service.set_status(InfraStatus.ready)
         exec_log.mark_result(True)
-        logger.info("Service has no web interface. Skipping. service_id=%s exec_log_id=%s", service_id, exec_log_id)
+        logger.info(
+            "Service has no web interface. Skipping. service_id=%s exec_log_id=%s",
+            service_id,
+            exec_log_id,
+        )
         return True
 
     creds = service.project.environment.get_creds()
@@ -419,7 +424,7 @@ def get_deployment_conf(deployment):
         version=deployment.version,
         container_port=deployment.service.container_port,
         target_group_arn=service_conf.target_group_arn,
-        secrets=env_vars
+        secrets=env_vars,
     )
 
 
@@ -469,7 +474,13 @@ def update_service_infra(previous_service_id, new_service_id, exec_log_id):
     ).latest("deployed_at")
 
     if not deployment.service.has_web_interface:
-        logger.info("Service has no web interface. No changes to apply to infra. previous_service_id=%s service_id=%s exec_log_id=%s", previous_service_id, new_service_id, exec_log_id)
+        logger.info(
+            "Service has no web interface. No changes to apply to infra. "
+            "previous_service_id=%s service_id=%s exec_log_id=%s",
+            previous_service_id,
+            new_service_id,
+            exec_log_id,
+        )
         exec_log = ExecutionLog.objects.get(id=exec_log_id)
         deployment.service.set_status(InfraStatus.ready)
         exec_log.mark_result(True)

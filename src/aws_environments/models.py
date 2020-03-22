@@ -383,12 +383,14 @@ class Service(BaseModel):
     def get_env_vars(self):
         client = get_boto3_client("ssm", self.project.environment.get_creds())
         params = client.describe_parameters(
-            ParameterFilters={"Key": "Name", "Option": "BeginsWith", "Value": self.get_ssm_prefix()})
+            ParameterFilters=[{"Key": "Name", "Option": "BeginsWith", "Values": [self.get_ssm_prefix()]}]
+        )
         env_vars = []
         for param in params["Parameters"]:
             env_vars.append(dict(
                 name=param['Name'].split("/")[-1],
-                value_from=param["Name"]
+                value_from=param["Name"],
+                last_modified=param["LastModifiedDate"],
             ))
 
         return env_vars

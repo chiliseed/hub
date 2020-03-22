@@ -422,16 +422,7 @@ class EnvironmentVariables(ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         service = self.get_object()
-        client = get_boto3_client("ssm", service.project.environment.get_creds())
-        params = client.describe_parameters(ParameterFilters={"Key": "Name", "Option": "BeginsWith", "Value": service.get_ssm_prefix()})
-        if params['Parameters']:
-            response = [
-                dict(key_name=key['Name'], last_modified=key["LastModifiedDate"], description=key["Description"])
-                for key in params['Parameters']
-            ]
-        else:
-            response = []
-        return Response(response)
+        return Response(service.get_env_vars())
 
     def destroy(self, request, *args, **kwargs):
         if not request.data['key_name']:

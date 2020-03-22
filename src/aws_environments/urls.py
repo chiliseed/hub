@@ -2,15 +2,15 @@
 from django.urls import path
 
 from aws_environments.views import (
-    EnvironmentCreate,
-    EnvironmentList,
-    ExecutionLogDetailsView,
     CreateListProject,
     CreateListUpdateServices,
     CreateWorker,
-    WorkerDetails,
     DeployService,
+    EnvironmentCreate,
+    EnvironmentList,
     EnvironmentVariables,
+    ExecutionLogDetailsView,
+    WorkerDetails,
 )
 
 app_name = "aws_env"

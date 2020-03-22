@@ -4,11 +4,6 @@ variable "create" {
   default     = true
 }
 
-variable "environment" {
-  description = "The name of the environment"
-  type        = string
-}
-
 variable "description" {
   description = "The description of the DB parameter group"
   type        = string
@@ -41,6 +36,12 @@ variable "parameters" {
   description = "A list of DB parameter maps to apply"
   type        = list(map(string))
   default     = []
+}
+
+variable "tags" {
+  description = "A mapping of tags to assign to the resource"
+  type        = map(string)
+  default     = {}
 }
 
 variable "use_name_prefix" {

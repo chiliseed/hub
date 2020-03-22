@@ -2,22 +2,12 @@ locals {
   description = coalesce(var.description, "Database parameter group for ${var.identifier}")
 }
 
-resource "aws_db_parameter_group" "db_params" {
+resource "aws_db_parameter_group" "this_no_prefix" {
+  count = var.create && false == var.use_name_prefix ? 1 : 0
 
   name        = var.name
   description = local.description
   family      = var.family
-
-  tags = {
-    Name = format("%s", var.identifier),
-    Environment = var.environment
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  count = var.create && false == var.use_name_prefix ? 1 : 0
 
   dynamic "parameter" {
     for_each = var.parameters
@@ -27,10 +17,20 @@ resource "aws_db_parameter_group" "db_params" {
       apply_method = lookup(parameter.value, "apply_method", null)
     }
   }
+
+  tags = merge(
+    var.tags,
+    {
+      "Name" = format("%s", var.name)
+    },
+  )
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
-resource "aws_db_parameter_group" "prefixed_db_params" {
-
+resource "aws_db_parameter_group" "this" {
   count = var.create && var.use_name_prefix ? 1 : 0
 
   name_prefix = var.name_prefix
@@ -46,10 +46,12 @@ resource "aws_db_parameter_group" "prefixed_db_params" {
     }
   }
 
-  tags = {
-    Name = format("%s", var.identifier),
-    Environment = var.environment
-  }
+  tags = merge(
+    var.tags,
+    {
+      "Name" = format("%s", var.identifier)
+    },
+  )
 
   lifecycle {
     create_before_destroy = true

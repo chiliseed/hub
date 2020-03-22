@@ -1,55 +1,5 @@
-variable "name_prefix" {
-  description = "Creates a unique name beginning with the specified prefix"
-  type        = string
-  default     = ""
-}
-
 variable "identifier" {
-  description = "The identifier of the resource"
-  type        = string
-}
-
-variable "use_parameter_group_name_prefix" {
-  description = "Whether to use name_prefix or not"
-  type        = bool
-  default     = true
-}
-
-variable "params_family" {
-  description = "The family of the DB parameter group"
-  type        = string
-  default     = "postgres11"
-}
-
-variable "parameters" {
-  description = "A list of DB parameter maps to apply"
-  type        = list(map(string))
-  default     = []
-}
-
-variable "engine" {
-  description = "Specifies the name of the engine that this option group should be associated with"
-  type        = string
-}
-
-variable "engine_version" {
-  description = "Specifies the exact version of the engine of the db"
-  type        = string
-}
-
-variable "major_engine_version" {
-  description = "Specifies the major version of the engine that this option group should be associated with"
-  type        = string
-}
-
-variable "options" {
-  description = "A list of Options to apply"
-  type        = any
-  default     = []
-}
-
-variable "instance_type" {
-  description = "The instance type of the RDS instance. Example: m5.xlarge."
+  description = "The name of the RDS instance, if omitted, Terraform will assign a random, unique identifier"
   type        = string
 }
 
@@ -88,10 +38,37 @@ variable "snapshot_identifier" {
   default     = ""
 }
 
+variable "license_model" {
+  description = "License model information for this DB instance. Optional, but required for some DB engines, i.e. Oracle SE1"
+  type        = string
+  default     = ""
+}
+
 variable "iam_database_authentication_enabled" {
   description = "Specifies whether or mappings of AWS Identity and Access Management (IAM) accounts to database accounts is enabled"
   type        = bool
   default     = false
+}
+
+variable "engine" {
+  description = "The database engine to use"
+  type        = string
+}
+
+variable "engine_version" {
+  description = "The engine version to use"
+  type        = string
+}
+
+variable "final_snapshot_identifier" {
+  description = "The name of your final DB snapshot when this DB instance is deleted."
+  type        = string
+  default     = null
+}
+
+variable "instance_class" {
+  description = "The instance type of the RDS instance"
+  type        = string
 }
 
 variable "name" {
@@ -115,32 +92,32 @@ variable "port" {
   type        = string
 }
 
-variable "final_snapshot_identifier" {
-  description = "The name of your final DB snapshot when this DB instance is deleted."
-  type        = string
-  default     = null
-}
-
-variable "security_group_ids" {
+variable "vpc_security_group_ids" {
   description = "List of VPC security groups to associate"
   type        = list(string)
   default     = []
 }
 
-variable "subnet_ids" {
-  description = "A list of VPC subnet IDs"
-  type        = list(string)
-  default     = []
-}
-
-variable "subnet_group_name" {
+variable "db_subnet_group_name" {
   description = "Name of DB subnet group. DB instance will be created in the VPC associated with the DB subnet group. If unspecified, will be created in the default VPC"
   type        = string
   default     = ""
 }
 
+variable "parameter_group_description" {
+  description = "Description of the DB parameter group to create"
+  type        = string
+  default     = ""
+}
+
 variable "parameter_group_name" {
-  description = "Name of the DB parameter group to associate"
+  description = "Name of the DB parameter group to associate or create"
+  type        = string
+  default     = ""
+}
+
+variable "option_group_name" {
+  description = "Name of the DB option group to associate"
   type        = string
   default     = ""
 }
@@ -151,7 +128,7 @@ variable "availability_zone" {
   default     = ""
 }
 
-variable "is_multi_az" {
+variable "multi_az" {
   description = "Specifies if the RDS instance is multi-AZ"
   type        = bool
   default     = false
@@ -163,7 +140,7 @@ variable "iops" {
   default     = 0
 }
 
-variable "is_publicly_accessible" {
+variable "publicly_accessible" {
   description = "Bool to control if instance is publicly accessible"
   type        = bool
   default     = false
@@ -239,6 +216,75 @@ variable "backup_window" {
   type        = string
 }
 
+variable "tags" {
+  description = "A mapping of tags to assign to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+# DB subnet group
+variable "subnet_ids" {
+  description = "A list of VPC subnet IDs"
+  type        = list(string)
+  default     = []
+}
+
+# DB parameter group
+variable "family" {
+  description = "The family of the DB parameter group"
+  type        = string
+  default     = ""
+}
+
+variable "parameters" {
+  description = "A list of DB parameters (map) to apply"
+  type        = list(map(string))
+  default     = []
+}
+
+# DB option group
+variable "option_group_description" {
+  description = "The description of the option group"
+  type        = string
+  default     = ""
+}
+
+variable "major_engine_version" {
+  description = "Specifies the major version of the engine that this option group should be associated with"
+  type        = string
+  default     = ""
+}
+
+variable "options" {
+  description = "A list of Options to apply."
+  type        = any
+  default     = []
+}
+
+variable "create_db_subnet_group" {
+  description = "Whether to create a database subnet group"
+  type        = bool
+  default     = true
+}
+
+variable "create_db_parameter_group" {
+  description = "Whether to create a database parameter group"
+  type        = bool
+  default     = true
+}
+
+variable "create_db_option_group" {
+  description = "(Optional) Create a database option group"
+  type        = bool
+  default     = true
+}
+
+variable "create_db_instance" {
+  description = "Whether to create a database instance"
+  type        = bool
+  default     = true
+}
+
 variable "timezone" {
   description = "(Optional) Time zone of the DB instance. timezone is currently only supported by Microsoft SQL Server. The timezone can only be set on creation. See MSSQL User Guide for more information."
   type        = string
@@ -267,30 +313,46 @@ variable "timeouts" {
   }
 }
 
+variable "option_group_timeouts" {
+  description = "Define maximum timeout for deletion of `aws_db_option_group` resource"
+  type        = map(string)
+  default = {
+    delete = "15m"
+  }
+}
+
 variable "deletion_protection" {
   description = "The database can't be deleted when this value is set to true."
   type        = bool
   default     = false
 }
 
-variable "environment" {
-  description = "The name of the environment"
-}
-
-variable "create_db_subnet_group" {
-  description = "Whether to create a database subnet group"
+variable "use_parameter_group_name_prefix" {
+  description = "Whether to use the parameter group name prefix or not"
   type        = bool
   default     = true
 }
 
-variable "create_db_parameter_group" {
-  description = "Whether to create a database parameter group"
+variable "performance_insights_enabled" {
+  description = "Specifies whether Performance Insights are enabled"
   type        = bool
-  default     = true
+  default     = false
 }
 
-variable "create_db_option_group" {
-  description = "Whether to create a database option group"
-  type        = bool
-  default     = true
+variable "performance_insights_retention_period" {
+  description = "The amount of time in days to retain Performance Insights data. Either 7 (7 days) or 731 (2 years)."
+  type        = number
+  default     = 7
+}
+
+variable "max_allocated_storage" {
+  description = "Specifies the value for Storage Autoscaling"
+  type        = number
+  default     = 0
+}
+
+variable "ca_cert_identifier" {
+  description = "Specifies the identifier of the CA certificate for the DB instance"
+  type        = string
+  default     = "rds-ca-2019"
 }

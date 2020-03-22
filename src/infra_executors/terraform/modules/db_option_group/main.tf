@@ -6,15 +6,6 @@ resource "aws_db_option_group" "this" {
   engine_name              = var.engine_name
   major_engine_version     = var.major_engine_version
 
-  tags = {
-    Name = format("%s", var.identifier),
-    Environment = var.environment
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
   dynamic "option" {
     for_each = var.options
     content {
@@ -32,5 +23,20 @@ resource "aws_db_option_group" "this" {
         }
       }
     }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      "Name" = format("%s", var.identifier)
+    },
+  )
+
+  timeouts {
+    delete = lookup(var.timeouts, "delete", null)
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }

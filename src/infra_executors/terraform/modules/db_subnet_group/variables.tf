@@ -20,6 +20,8 @@ variable "subnet_ids" {
   default     = []
 }
 
-variable "environment" {
-  description = "The name of the environment"
+variable "tags" {
+  description = "A mapping of tags to assign to the resource"
+  type        = map(string)
+  default     = {}
 }

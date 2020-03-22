@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Whether to create this resource or not?"
+  type        = bool
+  default     = true
+}
+
 variable "identifier" {
   description = "The name of the RDS instance, if omitted, Terraform will assign a random, unique identifier"
   type        = string
@@ -34,6 +40,12 @@ variable "replicate_source_db" {
 
 variable "snapshot_identifier" {
   description = "Specifies whether or not to create this database from a snapshot. This correlates to the snapshot ID you'd find in the RDS console, e.g: rds:production-2015-06-26-06-05."
+  type        = string
+  default     = ""
+}
+
+variable "license_model" {
+  description = "License model information for this DB instance. Optional, but required for some DB engines, i.e. Oracle SE1"
   type        = string
   default     = ""
 }
@@ -198,9 +210,10 @@ variable "backup_window" {
   type        = string
 }
 
-variable "environment" {
-  description = "The name of the environment"
-  type        = string
+variable "tags" {
+  description = "A mapping of tags to assign to all resources"
+  type        = map(string)
+  default     = {}
 }
 
 variable "option_group_name" {
@@ -241,4 +254,28 @@ variable "deletion_protection" {
   description = "The database can't be deleted when this value is set to true."
   type        = bool
   default     = false
+}
+
+variable "performance_insights_enabled" {
+  description = "Specifies whether Performance Insights are enabled"
+  type        = bool
+  default     = false
+}
+
+variable "performance_insights_retention_period" {
+  description = "The amount of time in days to retain Performance Insights data. Either 7 (7 days) or 731 (2 years)."
+  type        = number
+  default     = 7
+}
+
+variable "max_allocated_storage" {
+  description = "Specifies the value for Storage Autoscaling"
+  type        = number
+  default     = 0
+}
+
+variable "ca_cert_identifier" {
+  description = "Specifies the identifier of the CA certificate for the DB instance"
+  type        = string
+  default     = "rds-ca-2019"
 }

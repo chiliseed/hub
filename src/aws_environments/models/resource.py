@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -40,12 +41,53 @@ class ResourceConf(BaseConf):
     port: int = 0
 
 
+@dataclass
+class DBPreset:
+    instance_type: str
+    allocated_storage: int
+
+
+@dataclass
+class CachePreset:
+    instance_type: str
+    number_of_nodes: int
+
+
+@dataclass
+class EngineDefaults:
+    port: int
+    engine_version: str
+
+
 class Resource(BaseModel):
     """Manages environment resources such as db and cache."""
 
     class Types(models.TextChoices):
         db = "database"
         cache = "cache"
+
+    class Presets(models.TextChoices):
+        dev = "dev"
+        prod = "prod"
+
+    class EngineTypes(models.TextChoices):
+        postgres = "postgres"
+        redis = "redis"
+
+    ENGINE_DEFAULTS = {
+        EngineTypes.postgres: EngineDefaults(5432, "11.6"),
+        EngineTypes.redis: EngineDefaults(6379, "5.0.6"),
+    }
+
+    DB_PRESETS = {
+        Presets.dev: DBPreset("db.t2.medium", 20),
+        Presets.prod: DBPreset("db.r4.large", 500)
+    }
+
+    CACHE_PRESETS = {
+        Presets.dev: CachePreset("cache.t2.small", 1),
+        Presets.prod: CachePreset("cache.r5.large", 2),
+    }
 
     organization = models.ForeignKey(
         "organizations.Organization",
@@ -62,6 +104,8 @@ class Resource(BaseModel):
     name = models.CharField(max_length=150)
     kind = models.CharField(max_length=50, choices=Types.choices)
     configuration = EncryptedTextField(default="{}")
+    preset = models.CharField(max_length=50, choices=Presets.choices)
+    engine = models.CharField(max_length=50, choices=EngineTypes.choices)
 
     last_status = models.ForeignKey(
         ResourceStatus,
@@ -69,6 +113,27 @@ class Resource(BaseModel):
         null=True,
         related_name="resource_object",
     )
+
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return f"#{self.id} | Kind: {self.kind} | Identifier: {self.identifier}"
+
+    @staticmethod
+    def generate_identifier(resource_name, environment):
+        """Generate resource identifier string.
+
+        Parameters
+        ----------
+        resource_name: str
+        environment: aws_environments.models.Environment
+
+        Returns
+        -------
+        str
+        """
+        return f"{environment.name}-{resource_name}-{environment.slug}"
 
     def set_status(self, status, actor=None):
         """Change status of a resource."""
@@ -89,3 +154,8 @@ class Resource(BaseModel):
     def set_conf(self, resource_conf: ResourceConf):
         self.configuration = resource_conf.to_str()
         self.save(update_fields=["configuration"])
+
+    def mark_deleted(self):
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.save(update_fields=["is_deleted", "deleted_at"])

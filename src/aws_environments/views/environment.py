@@ -8,8 +8,7 @@ from rest_framework.response import Response
 from aws_environments.constants import InfraStatus
 from aws_environments.jobs import create_environment_infra
 from aws_environments.models import ExecutionLog, Environment
-from aws_environments.serializers import CreateEnvironmentSerializer, EnvironmentSerializer
-
+from aws_environments.serializers import CreateEnvironmentSerializer, EnvironmentSerializer, ServiceSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +51,13 @@ class EnvironmentList(ListAPIView):
         if self.request.query_params.get("name"):
             params["name__iexact"] = self.request.query_params["name"]
         return Environment.objects.filter(**params)
+
+
+class EnvironmentListServices(ListAPIView):
+    serializer_class = ServiceSerializer
+    lookup_field = "slug"
+    lookup_url_kwarg = "env_slug"
+
+    def get_queryset(self):
+        environment = Environment.objects.get(slug=self.kwargs["env_slug"])
+        return environment.services.filter(is_deleted=False)

@@ -1,4 +1,5 @@
 """Manages ecs cluster."""
+import logging
 import os
 from typing import Any, NamedTuple
 
@@ -8,14 +9,13 @@ from infra_executors.constants import (
     KEYS_DIR,
 )
 from infra_executors.constructors import build_project_state_key
-from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import (
     ExecutorConfiguration,
     TerraformExecutor,
 )
 from infra_executors.utils import get_boto3_client
 
-logger = get_logger("ecs")
+logger = logging.getLogger(__name__)
 
 
 class ECSConfigs(NamedTuple):
@@ -140,3 +140,23 @@ def destroy_ecs_cluster(
         ),
     )
     return executor.execute_destroy()
+
+
+def get_ecs_cluster_details(
+    creds: AwsCredentials, params: GeneralConfiguration, ecs_conf: ECSConfigs
+) -> Any:
+    """Utility to run terraform outputs and return infra params."""
+    logger.info("Executing run_id=%s", params.run_id)
+    executor = TerraformExecutor(
+        creds=creds,
+        general_configs=params,
+        cmd_configs=ecs_conf,
+        executor_configs=ExecutorConfiguration(
+            name="ecs",
+            action="destroy",
+            config_dir="ecs",
+            state_key=build_project_state_key(params, "ecs"),
+            variables_file_name="",
+        ),
+    )
+    return executor.get_outputs()

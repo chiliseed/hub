@@ -14,7 +14,7 @@ from aws_environments.models import (
     Service,
     ServiceConf,
     ServiceDeployment,
-)
+    Resource)
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):
@@ -181,3 +181,20 @@ class EnvironmentVariableSerializer(serializers.Serializer):
     key_name = serializers.CharField()
     key_value = serializers.CharField()
     is_secret = serializers.BooleanField(default=True)
+
+
+class CreateDatabaseSerializer(serializers.ModelSerializer):
+    username = serializers.CharField()
+    engine = serializers.ChoiceField(choices=[Resource.EngineTypes.postgres])
+
+    class Meta:
+        model = Resource
+        fields = ("name", "preset", "engine", "username", )
+
+
+class CreateCacheSerializer(serializers.ModelSerializer):
+    engine = serializers.ChoiceField(choices=[Resource.EngineTypes.redis])
+
+    class Meta:
+        model = Resource
+        fields = ("name", "preset", "engine", )

@@ -1,5 +1,5 @@
 """Creates the database inside a vpc."""
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, List
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_project_state_key
@@ -22,6 +22,7 @@ class DBConfigs(NamedTuple):
 
     instance_type: str = "db.t2.large"
     allocated_storage: int = 100
+    allowed_security_groups_ids: List[str] = []
 
 
 def create_postgresql(

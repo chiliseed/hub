@@ -12,6 +12,8 @@ from aws_environments.views import (
     ExecutionLogDetailsView,
     WorkerDetails,
 )
+from aws_environments.views.environment import EnvironmentListServices
+from aws_environments.views.resource import CreateDatabaseResource, CreateCacheResource
 
 app_name = "aws_env"
 urlpatterns = [
@@ -21,6 +23,21 @@ urlpatterns = [
         "environment/<slug:env_slug>/projects/",
         CreateListProject.as_view({"post": "create", "get": "list"}),
         name="projects",
+    ),
+    path(
+        "environment/<slug:env_slug>/services/",
+        EnvironmentListServices.as_view(),
+        name="env_list_services",
+    ),
+    path(
+        "environment/<slug:env_slug>/add-db/",
+        CreateDatabaseResource.as_view(),
+        name="create_db",
+    ),
+    path(
+        "environment/<slug:env_slug>/add-cache/",
+        CreateCacheResource.as_view(),
+        name="create_cache",
     ),
     path(
         "project/<slug:project_slug>/services/",

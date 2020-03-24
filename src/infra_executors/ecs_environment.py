@@ -1,13 +1,13 @@
 """Manages environment global parts and project infra."""
 from typing import NamedTuple, Any, Dict
 
-from infra_executors.alb import create_alb, ALBConfigs, destroy_alb
+from infra_executors.alb import create_alb, ALBConfigs, destroy_alb, get_alb_details
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.ecs import (
     ECSConfigs,
     create_ecs_cluster,
     destroy_ecs_cluster,
-)
+    get_ecs_cluster_details)
 from infra_executors.logger import get_logger
 from infra_executors.network import (
     create_network,
@@ -80,33 +80,36 @@ def launch_project_infra(
     )
 
     logger.info("Launching ECS cluster")
-    ecs_conf = ECSConfigs(
-        cluster=f"{common_conf.project_name}-{common_conf.env_slug}",
-        instance_group_name=f"{common_conf.project_name}-{common_conf.env_slug}",
-        cloudwatch_prefix=f"{common_conf.project_name}-{common_conf.env_slug}",
-        alb_security_group_id=alb["alb_security_group_id"]["value"],
-    )
+    ecs_conf = build_ecs_conf(alb, common_conf)
     ecs = create_ecs_cluster(creds, common_conf, ecs_conf)
     logger.info("Created ECS cluster %s", ecs["cluster"])
     return alb, ecs
 
 
-def create_environment(
-    creds: AwsCredentials, common_conf: GeneralConfiguration, env_conf: EnvConfigs,
-) -> Dict[Any, Any]:
-    """Create new ECS environment."""
-    network, route53 = create_global_parts(creds, common_conf, env_conf.route53)
+def build_ecs_conf(alb_security_group_id, common_conf):
+    return ECSConfigs(
+        cluster=f"{common_conf.project_name}-{common_conf.env_slug}",
+        instance_group_name=f"{common_conf.project_name}-{common_conf.env_slug}",
+        cloudwatch_prefix=f"{common_conf.project_name}-{common_conf.env_slug}",
+        alb_security_group_id=alb_security_group_id,
+    )
 
-    common_conf_with_vpc = common_conf._replace(vpc_id=network["vpc_id"]["value"])
-    alb, ecs = launch_project_infra(creds, common_conf_with_vpc)
 
-    return dict(network=network, alb=alb, route53=route53, ecs=ecs)
+def get_project_details(
+    creds: AwsCredentials, common_conf: GeneralConfiguration, alb_conf: ALBConfigs,
+):
+    """Retrieves terraform output for project components."""
+    alb = get_alb_details(creds, common_conf, alb_conf)
+    ecs_conf = build_ecs_conf(alb["alb_security_group_id"]["value"], common_conf)
+    ecs = get_ecs_cluster_details(creds, common_conf, ecs_conf)
+    return dict(alb=alb, ecs=ecs)
 
 
 def destroy_environment(
     creds: AwsCredentials, common_conf: GeneralConfiguration, env_conf: EnvConfigs,
 ):
     """Removes ECS environment."""
+    # todo make this work
     logger.info("Get network details")
     network = get_network_details(creds, common_conf)
 

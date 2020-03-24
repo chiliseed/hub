@@ -12,7 +12,7 @@ from aws_environments.models import (
 from aws_environments.tests.factories import (
     EnvironmentFactory,
     ProjectFactory,
-)
+    ServiceFactory)
 from users.tests.factories import UserFactory
 
 
@@ -92,6 +92,28 @@ class ListEnvTestCase(APITestCase):
         resp = self.client.get(self.url, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()[0]["name"], env.name)
+
+
+class ListEnvServicesTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.user = UserFactory()
+        self.client.login(username=self.user.email, password="Aa123ewq!")
+        self.environment = EnvironmentFactory(organization=self.user.organization)
+        self.project = ProjectFactory(organization=self.user.organization, environment=self.environment)
+        self.url = reverse("api:aws_env:env_list_services", args=(self.environment.slug,))
+
+    def test_empty_list(self):
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()), 0)
+
+    def test_list(self):
+        service = ServiceFactory(organization=self.user.organization, environment=self.environment, project=self.project)
+
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()), 1)
+        self.assertEqual(resp.json()[0]["slug"], service.slug)
 
 
 # class CreateListProjectTestCase(APITestCase):

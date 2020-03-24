@@ -29,7 +29,10 @@ class ResourceStatus(BaseModel):
 
 @dataclass
 class ResourceConf(BaseConf):
-    instance_type: str
+    instance_type: str = ""
+    engine: str = ""
+    engine_version: str = ""
+    number_of_nodes: int = 1
     allocated_storage: int = 5
     username: str = ""
     password: str = ""

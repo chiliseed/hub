@@ -19,9 +19,9 @@ User = get_user_model()
 
 @dataclass
 class ServiceConf(BaseConf):
-    acm_arn: str
-    health_check_protocol: str
-    ecr_repo_name: str
+    acm_arn: str = ""
+    health_check_protocol: str = ""
+    ecr_repo_name: str = ""
     ecr_repo_url: str = ""
     target_group_arn: str = ""
 

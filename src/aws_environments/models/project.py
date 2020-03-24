@@ -21,9 +21,9 @@ User = get_user_model()
 
 @dataclass
 class ProjectConf(BaseConf):
-    alb_name: str
-    alb_public_dns: str
-    ecs_cluster: str
+    alb_name: str = ""
+    alb_public_dns: str = ""
+    ecs_cluster: str = ""
     ecs_executor_role_arn: str = ""
 
 

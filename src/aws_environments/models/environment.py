@@ -17,10 +17,10 @@ User = get_user_model()
 
 @dataclass
 class EnvironmentConf(BaseConf):
-    vpc_id: str
-    access_key_id: str
-    access_key_secret: str
-    r53_zone_id: str
+    vpc_id: str = ""
+    access_key_id: str = ""
+    access_key_secret: str = ""
+    r53_zone_id: str = ""
 
 
 class EnvStatus(BaseModel):

@@ -1,6 +1,6 @@
+from dataclasses import dataclass
 import json
 import os
-from dataclasses import dataclass, asdict
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -14,20 +14,17 @@ from infra_executors.ecr import ECRConfigs
 from infra_executors.route53 import Route53Configuration, CnameSubDomain
 
 from .environment import Environment
-
+from .utils import BaseConf
 
 User = get_user_model()
 
 
 @dataclass
-class ProjectConf:
+class ProjectConf(BaseConf):
     alb_name: str
     alb_public_dns: str
     ecs_cluster: str
     ecs_executor_role_arn: str = ""
-
-    def to_str(self):
-        return json.dumps(asdict(self))
 
 
 class ProjectStatus(BaseModel):

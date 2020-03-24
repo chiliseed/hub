@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -10,7 +10,7 @@ from common.models import BaseModel
 
 from .environment import Environment
 from .project import Project
-
+from .utils import BaseConf
 
 User = get_user_model()
 
@@ -28,16 +28,13 @@ class ResourceStatus(BaseModel):
 
 
 @dataclass
-class ResourceConf:
+class ResourceConf(BaseConf):
     instance_type: str
     allocated_storage: int = 5
     username: str = ""
     password: str = ""
     address: str = ""
     port: int = 0
-
-    def to_str(self):
-        return json.dumps(asdict(self))
 
 
 class Resource(BaseModel):

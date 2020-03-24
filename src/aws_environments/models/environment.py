@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -8,6 +8,7 @@ from fernet_fields import EncryptedTextField
 from aws_environments.constants import InfraStatus, Regions
 from common.models import BaseModel
 from infra_executors.constants import AwsCredentials
+from .utils import BaseConf
 
 from .validators import OptionalSchemeURLValidator
 
@@ -15,14 +16,11 @@ User = get_user_model()
 
 
 @dataclass
-class EnvironmentConf:
+class EnvironmentConf(BaseConf):
     vpc_id: str
     access_key_id: str
     access_key_secret: str
     r53_zone_id: str
-
-    def to_str(self):
-        return json.dumps(asdict(self))
 
 
 class EnvStatus(BaseModel):

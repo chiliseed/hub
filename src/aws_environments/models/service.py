@@ -1,6 +1,6 @@
-import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -12,21 +12,18 @@ from infra_executors.utils import get_boto3_client
 
 from .project import Project
 from .environment import Environment
-
+from .utils import BaseConf
 
 User = get_user_model()
 
 
 @dataclass
-class ServiceConf:
+class ServiceConf(BaseConf):
     acm_arn: str
     health_check_protocol: str
     ecr_repo_name: str
     ecr_repo_url: str = ""
     target_group_arn: str = ""
-
-    def to_str(self):
-        return json.dumps(asdict(self))
 
 
 class ServiceStatus(BaseModel):

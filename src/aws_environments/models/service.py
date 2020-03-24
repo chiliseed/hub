@@ -64,7 +64,9 @@ class Service(BaseModel):
         null=False,
         blank=False,
     )
-    environment = models.ForeignKey(Environment, related_name="services", null=True, on_delete=models.CASCADE)
+    environment = models.ForeignKey(
+        Environment, related_name="services", null=True, on_delete=models.CASCADE
+    )
 
     name = models.CharField(max_length=100, null=False, blank=False)
 
@@ -159,8 +161,15 @@ class ServiceDeployment(BaseModel):
         null=False,
         blank=True,
     )
-    environment = models.ForeignKey(Environment, related_name="service_deployments", on_delete=models.CASCADE, null=True)
-    project = models.ForeignKey(Project, related_name="service_deployments", on_delete=models.CASCADE, null=True)
+    environment = models.ForeignKey(
+        Environment,
+        related_name="service_deployments",
+        on_delete=models.CASCADE,
+        null=True,
+    )
+    project = models.ForeignKey(
+        Project, related_name="service_deployments", on_delete=models.CASCADE, null=True
+    )
 
     deployed_at = models.DateTimeField(null=True, blank=True)
     version = models.CharField(max_length=20, null=False, blank=False)

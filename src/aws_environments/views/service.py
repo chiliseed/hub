@@ -43,7 +43,11 @@ class CreateListUpdateServices(ModelViewSet):
                 data=dict(detail=error_reason), status=status.HTTP_400_BAD_REQUEST
             )
 
-        service = serializer.save(project=project, environment=project.environment, organization=request.user.organization)
+        service = serializer.save(
+            project=project,
+            environment=project.environment,
+            organization=request.user.organization,
+        )
 
         exec_log = ExecutionLog.register(
             self.request.user.organization,

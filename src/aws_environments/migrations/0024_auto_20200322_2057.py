@@ -7,26 +7,39 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_environments', '0023_resource_project'),
+        ("aws_environments", "0023_resource_project"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='service',
-            name='environment',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='services', to='aws_environments.Environment'),
+            model_name="service",
+            name="environment",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="services",
+                to="aws_environments.Environment",
+            ),
         ),
         migrations.AddField(
-            model_name='servicedeployment',
-            name='environment',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='service_deployments', to='aws_environments.Environment'),
+            model_name="servicedeployment",
+            name="environment",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="service_deployments",
+                to="aws_environments.Environment",
+            ),
         ),
         migrations.AddField(
-            model_name='servicedeployment',
-            name='project',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='service_deployments', to='aws_environments.Project'),
+            model_name="servicedeployment",
+            name="project",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="service_deployments",
+                to="aws_environments.Project",
+            ),
         ),
-        migrations.DeleteModel(
-            name='EnvironmentVariable',
-        ),
+        migrations.DeleteModel(name="EnvironmentVariable",),
     ]

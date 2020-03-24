@@ -7,7 +7,8 @@ from infra_executors.ecs import (
     ECSConfigs,
     create_ecs_cluster,
     destroy_ecs_cluster,
-    get_ecs_cluster_details)
+    get_ecs_cluster_details,
+)
 from infra_executors.logger import get_logger
 from infra_executors.network import (
     create_network,

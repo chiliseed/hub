@@ -2,11 +2,23 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from aws_environments.constants import InfraStatus
-from aws_environments.jobs.deployment import get_deployment_conf, deploy_version_to_service
-from aws_environments.models import Service, ExecutionLog, ServiceConf, ServiceDeployment
+from aws_environments.jobs.deployment import (
+    get_deployment_conf,
+    deploy_version_to_service,
+)
+from aws_environments.models import (
+    Service,
+    ExecutionLog,
+    ServiceConf,
+    ServiceDeployment,
+)
 from infra_executors.alb import HTTP
 from infra_executors.deploy_ecs_service import remove_ecs_service
-from infra_executors.ecs_service import create_acm_for_service, launch_infa_for_service, destroy_service_infra
+from infra_executors.ecs_service import (
+    create_acm_for_service,
+    launch_infa_for_service,
+    destroy_service_infra,
+)
 
 logger = get_task_logger(__name__)
 

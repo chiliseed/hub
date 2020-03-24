@@ -25,8 +25,10 @@ class CreateDatabaseResource(GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         resource = Resource.objects.create(
-            identifier=Resource.generate_identifier(serializer.validated_data['name'], environment),
-            name=serializer.validated_data['name'],
+            identifier=Resource.generate_identifier(
+                serializer.validated_data["name"], environment
+            ),
+            name=serializer.validated_data["name"],
             kind=Resource.Types.db,
             preset=serializer.validated_data["preset"],
             engine=serializer.validated_data["engine"],
@@ -36,10 +38,10 @@ class CreateDatabaseResource(GenericAPIView):
         engine_defaults = Resource.ENGINE_DEFAULTS[resource.engine]
         resource_conf = ResourceConf(
             instance_type=preset.instance_type,
-            engine=serializer.validated_data['engine'],
+            engine=serializer.validated_data["engine"],
             engine_version=engine_defaults.engine_version,
             allocated_storage=preset.allocated_storage,
-            username=serializer.validated_data['username'],
+            username=serializer.validated_data["username"],
             password=get_uuid_hex(35),
             port=engine_defaults.port,
         )
@@ -73,8 +75,10 @@ class CreateCacheResource(GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         resource = Resource.objects.create(
-            identifier=Resource.generate_identifier(serializer.validated_data['name'], environment),
-            name=serializer.validated_data['name'],
+            identifier=Resource.generate_identifier(
+                serializer.validated_data["name"], environment
+            ),
+            name=serializer.validated_data["name"],
             kind=Resource.Types.cache,
             preset=serializer.validated_data["preset"],
             engine=serializer.validated_data["engine"],
@@ -84,7 +88,7 @@ class CreateCacheResource(GenericAPIView):
         engine_defaults = Resource.ENGINE_DEFAULTS[resource.engine]
         resource_conf = ResourceConf(
             instance_type=preset.instance_type,
-            engine=serializer.validated_data['engine'],
+            engine=serializer.validated_data["engine"],
             engine_version=engine_defaults.engine_version,
             port=engine_defaults.port,
             number_of_nodes=preset.number_of_nodes,

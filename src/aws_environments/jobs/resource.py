@@ -20,7 +20,11 @@ def get_servers_security_group(project, exec_log_id):
 
 @shared_task
 def launch_database(resource_id, exec_log_id):
-    logger.info("Launching new database. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+    logger.info(
+        "Launching new database. resource_id=%s exec_log_id=%s",
+        resource_id,
+        exec_log_id,
+    )
 
     resource = Resource.objects.get(id=resource_id)
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
@@ -34,7 +38,9 @@ def launch_database(resource_id, exec_log_id):
         password=resource_conf.password,
         instance_type=resource_conf.instance_type,
         allocated_storage=resource_conf.allocated_storage,
-        allowed_security_groups_ids=[get_servers_security_group(resource.project, exec_log_id)],
+        allowed_security_groups_ids=[
+            get_servers_security_group(resource.project, exec_log_id)
+        ],
     )
     creds = resource.environment.get_creds()
     params = resource.project.get_common_conf(exec_log_id)
@@ -42,7 +48,11 @@ def launch_database(resource_id, exec_log_id):
     try:
         db_infra = create_postgresql(creds, params, infra_conf)
     except Exception:
-        logger.exception("Failed to launch database. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+        logger.exception(
+            "Failed to launch database. resource_id=%s exec_log_id=%s",
+            resource_id,
+            exec_log_id,
+        )
         resource.set_status(InfraStatus.error)
         exec_log.mark_result(False)
         return False
@@ -53,7 +63,7 @@ def launch_database(resource_id, exec_log_id):
             allocated_storage=resource_conf.allocated_storage,
             username=resource_conf.username,
             password=resource_conf.password,
-            address=db_infra["master_instance_endpoint"]['value'],
+            address=db_infra["master_instance_endpoint"]["value"],
             port=resource_conf.port,
             engine=resource_conf.engine,
             engine_version=resource_conf.engine_version,
@@ -69,7 +79,9 @@ def launch_database(resource_id, exec_log_id):
 
 @shared_task
 def remove_database(resource_id, exec_log_id):
-    logger.info("Destroying database. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+    logger.info(
+        "Destroying database. resource_id=%s exec_log_id=%s", resource_id, exec_log_id
+    )
 
     resource = Resource.objects.get(id=resource_id)
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
@@ -90,7 +102,11 @@ def remove_database(resource_id, exec_log_id):
     try:
         destroy_postgresql(creds, params, infra_conf)
     except Exception:
-        logger.exception("Failed to destroy database. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+        logger.exception(
+            "Failed to destroy database. resource_id=%s exec_log_id=%s",
+            resource_id,
+            exec_log_id,
+        )
         resource.set_status(InfraStatus.error)
         exec_log.mark_result(False)
         return False
@@ -98,7 +114,9 @@ def remove_database(resource_id, exec_log_id):
     resource.mark_deleted()
     exec_log.mark_result(True)
 
-    logger.info("Removed database. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+    logger.info(
+        "Removed database. resource_id=%s exec_log_id=%s", resource_id, exec_log_id
+    )
     return True
 
 
@@ -113,12 +131,16 @@ def is_instance_type_t1_t2(instance_type):
     -------
     bool
     """
-    return instance_type.startswith("cache.t1.") or instance_type.startswith("cache.t2.")
+    return instance_type.startswith("cache.t1.") or instance_type.startswith(
+        "cache.t2."
+    )
 
 
 @shared_task
 def launch_cache(resource_id, exec_log_id):
-    logger.info("Launching cache. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+    logger.info(
+        "Launching cache. resource_id=%s exec_log_id=%s", resource_id, exec_log_id
+    )
 
     resource = Resource.objects.get(id=resource_id)
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
@@ -135,13 +157,21 @@ def launch_cache(resource_id, exec_log_id):
             engine=resource_conf.engine,
             engine_version=resource_conf.engine_version,
             number_of_nodes=resource_conf.number_of_nodes,
-            allowed_security_groups_ids=[get_servers_security_group(resource.project, exec_log_id)],
-            snapshot_retention_limit_days=0 if is_instance_type_t1_t2(resource_conf.instance_type) else 1,
-            apply_immediately=True
+            allowed_security_groups_ids=[
+                get_servers_security_group(resource.project, exec_log_id)
+            ],
+            snapshot_retention_limit_days=0
+            if is_instance_type_t1_t2(resource_conf.instance_type)
+            else 1,
+            apply_immediately=True,
         )
         cache_infra = create_cache(creds, params, infra_conf)
     except Exception:
-        logger.exception("Failed to launch cache. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+        logger.exception(
+            "Failed to launch cache. resource_id=%s exec_log_id=%s",
+            resource_id,
+            exec_log_id,
+        )
         resource.set_status(InfraStatus.error)
         exec_log.mark_result(False)
         return False
@@ -152,7 +182,7 @@ def launch_cache(resource_id, exec_log_id):
             allocated_storage=resource_conf.allocated_storage,
             username=resource_conf.username,
             password=resource_conf.password,
-            address=cache_infra["cache_nodes_details"]['value'][0]["address"],
+            address=cache_infra["cache_nodes_details"]["value"][0]["address"],
             port=resource_conf.port,
             engine=resource_conf.engine,
             engine_version=resource_conf.engine_version,
@@ -161,7 +191,12 @@ def launch_cache(resource_id, exec_log_id):
 
     resource.set_status(InfraStatus.ready)
     exec_log.mark_result(True)
-    logger.info("Launched cache: %s resource_id=%s exec_log_id=%s", resource_conf.engine, resource_id, exec_log_id)
+    logger.info(
+        "Launched cache: %s resource_id=%s exec_log_id=%s",
+        resource_conf.engine,
+        resource_id,
+        exec_log_id,
+    )
     return True
 
 
@@ -184,18 +219,31 @@ def remove_cache(resource_id, exec_log_id):
             engine=resource_conf.engine,
             engine_version=resource_conf.engine_version,
             number_of_nodes=resource_conf.number_of_nodes,
-            allowed_security_groups_ids=[get_servers_security_group(resource.project, exec_log_id)],
-            snapshot_retention_limit_days=0 if is_instance_type_t1_t2(resource_conf.instance_type) else 1,
-            apply_immediately=True
+            allowed_security_groups_ids=[
+                get_servers_security_group(resource.project, exec_log_id)
+            ],
+            snapshot_retention_limit_days=0
+            if is_instance_type_t1_t2(resource_conf.instance_type)
+            else 1,
+            apply_immediately=True,
         )
         destroy_cache(creds, params, infra_conf)
     except Exception:
-        logger.exception("Failed to destroy cache. resource_id=%s exec_log_id=%s", resource_id, exec_log_id)
+        logger.exception(
+            "Failed to destroy cache. resource_id=%s exec_log_id=%s",
+            resource_id,
+            exec_log_id,
+        )
         resource.set_status(InfraStatus.error)
         exec_log.mark_result(False)
         return False
 
     resource.mark_deleted()
     exec_log.mark_result(True)
-    logger.info("Removed cache: %s resource_id=%s exec_log_id=%s", resource_conf.engine, resource_id, exec_log_id)
+    logger.info(
+        "Removed cache: %s resource_id=%s exec_log_id=%s",
+        resource_conf.engine,
+        resource_id,
+        exec_log_id,
+    )
     return True

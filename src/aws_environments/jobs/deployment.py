@@ -2,7 +2,11 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from aws_environments.models import ServiceDeployment, ExecutionLog
-from infra_executors.deploy_ecs_service import SecretEnvVar, DeploymentConf, deploy_ecs_service
+from infra_executors.deploy_ecs_service import (
+    SecretEnvVar,
+    DeploymentConf,
+    deploy_ecs_service,
+)
 
 
 logger = get_task_logger(__name__)

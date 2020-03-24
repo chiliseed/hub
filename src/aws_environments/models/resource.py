@@ -18,7 +18,10 @@ User = get_user_model()
 
 class ResourceStatus(BaseModel):
     """Manages resource status."""
-    resource = models.ForeignKey("Resource", related_name="statuses", on_delete=models.CASCADE)
+
+    resource = models.ForeignKey(
+        "Resource", related_name="statuses", on_delete=models.CASCADE
+    )
     status = models.CharField(max_length=30, choices=InfraStatus.choices)
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
@@ -81,7 +84,7 @@ class Resource(BaseModel):
 
     DB_PRESETS = {
         Presets.dev: DBPreset("db.t2.medium", 20),
-        Presets.prod: DBPreset("db.r4.large", 500)
+        Presets.prod: DBPreset("db.r4.large", 500),
     }
 
     CACHE_PRESETS = {
@@ -98,7 +101,9 @@ class Resource(BaseModel):
     environment = models.ForeignKey(
         Environment, related_name="resources", on_delete=models.CASCADE
     )
-    project = models.ForeignKey(Project, related_name="resources", on_delete=models.PROTECT, null=True)
+    project = models.ForeignKey(
+        Project, related_name="resources", on_delete=models.PROTECT, null=True
+    )
 
     identifier = models.CharField(max_length=150)
     name = models.CharField(max_length=150)

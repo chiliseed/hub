@@ -65,5 +65,9 @@ class EnvironmentVariables(ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception:
             logger.exception("Failed to delete env vars: %s", key_name)
-            return Response(data={"detail": "Error deleting key. Does this key exist? Check key name and try again."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                data={
+                    "detail": "Error deleting key. Does this key exist? Check key name and try again."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )

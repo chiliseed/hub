@@ -4,7 +4,11 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from aws_environments.models import BuildWorker, ExecutionLog
-from infra_executors.build_worker import BuildWorkerConfigs, launch_build_worker_server, remove_build_worker_server
+from infra_executors.build_worker import (
+    BuildWorkerConfigs,
+    launch_build_worker_server,
+    remove_build_worker_server,
+)
 from infra_executors.utils import get_boto3_client
 
 
@@ -98,8 +102,8 @@ def remove_build_worker(build_worker_id, exec_log_id):
         dockerfile=worker.service.default_dockerfile_path,
         ecr_url=worker.service.conf().ecr_repo_url,
         valid_until=(datetime.utcnow() + timedelta(minutes=5))
-            .replace(tzinfo=timezone.utc)
-            .isoformat(),
+        .replace(tzinfo=timezone.utc)
+        .isoformat(),
     )
 
     try:

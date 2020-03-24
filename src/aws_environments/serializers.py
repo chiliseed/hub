@@ -14,7 +14,8 @@ from aws_environments.models import (
     Service,
     ServiceConf,
     ServiceDeployment,
-    Resource)
+    Resource,
+)
 
 
 class CreateEnvironmentSerializer(serializers.ModelSerializer):
@@ -189,7 +190,12 @@ class CreateDatabaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
-        fields = ("name", "preset", "engine", "username", )
+        fields = (
+            "name",
+            "preset",
+            "engine",
+            "username",
+        )
 
 
 class CreateCacheSerializer(serializers.ModelSerializer):
@@ -197,4 +203,8 @@ class CreateCacheSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
-        fields = ("name", "preset", "engine", )
+        fields = (
+            "name",
+            "preset",
+            "engine",
+        )

@@ -7,13 +7,18 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_environments', '0022_auto_20200322_1802'),
+        ("aws_environments", "0022_auto_20200322_1802"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='resource',
-            name='project',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='resources', to='aws_environments.Project'),
+            model_name="resource",
+            name="project",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="resources",
+                to="aws_environments.Project",
+            ),
         ),
     ]

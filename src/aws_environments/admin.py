@@ -4,7 +4,7 @@ from aws_environments.models import (
     Environment,
     Project,
     ExecutionLog,
-    Service,
+    Resource, Service,
     BuildWorker,
 )
 
@@ -114,8 +114,17 @@ class BuildWorkerAdmin(admin.ModelAdmin):
         return obj.instance_id is not None
 
 
+class ResourceAdmin(admin.ModelAdmin):
+    list_display = ("id", "slug", "organization", "environment", "project", "identifier", "kind", "preset", "engine")
+    list_filter = ("engine", "preset", "kind")
+    search_fields = ("id", "slug", "identifier")
+    readonly_fields = ("id", "slug")
+    list_display_links = ("id", "project", "organization", "environment")
+
+
 admin.site.register(Environment, EnvironmentAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(ExecutionLog, ExecLogAdmin)
 admin.site.register(Service, ServiceAdmin)
 admin.site.register(BuildWorker, BuildWorkerAdmin)
+admin.site.register(Resource, ResourceAdmin)

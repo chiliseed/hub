@@ -72,6 +72,9 @@ class Environment(BaseModel):
     class Meta:
         unique_together = ["organization_id", "name"]
 
+    def __str__(self):
+        return f"#{self.id} | Name: {self.name}"
+
     def conf(self) -> EnvironmentConf:
         return EnvironmentConf(**json.loads(self.configuration))
 

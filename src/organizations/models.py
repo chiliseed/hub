@@ -17,4 +17,4 @@ class Organization(BaseModel):
 
     def __str__(self):
         """Instance repr."""
-        return self.name
+        return f"#{self.id} | Name: {self.name}"

@@ -14,3 +14,4 @@ key_pairs/
 
 build_worker/target/
 .DS_Store
+/.vscode

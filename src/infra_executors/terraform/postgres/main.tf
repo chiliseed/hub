@@ -82,6 +82,9 @@ module "master" {
 
   # Database Deletion Protection
   deletion_protection = false
+
+  # DB parameter group
+  family               = "postgres11"
 }
 
 
@@ -123,4 +126,7 @@ module "read-replica" {
   deletion_protection = false
 
   major_engine_version = "11"
+
+  # DB parameter group
+  family               = "postgres11"
 }

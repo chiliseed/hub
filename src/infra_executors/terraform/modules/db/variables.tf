@@ -233,7 +233,6 @@ variable "subnet_ids" {
 variable "family" {
   description = "The family of the DB parameter group"
   type        = string
-  default     = ""
 }
 
 variable "parameters" {

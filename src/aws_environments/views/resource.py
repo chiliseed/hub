@@ -19,12 +19,20 @@ class CreateDatabaseResource(GenericAPIView):
     def get_queryset(self):
         return Environment.objects.filter(organization=self.request.user.organization)
 
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["organization"] = self.request.user.organization
+        return ctx
+
     def post(self, request, *args, **kwargs):
         environment = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         resource = Resource.objects.create(
+            organization=environment.organization,
+            environment=environment,
+            project=serializer.validated_data["project"],
             identifier=Resource.generate_identifier(
                 serializer.validated_data["name"], environment
             ),

@@ -187,6 +187,7 @@ class EnvironmentVariableSerializer(serializers.Serializer):
 class CreateDatabaseSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
     engine = serializers.ChoiceField(choices=[Resource.EngineTypes.postgres])
+    project = serializers.SlugRelatedField(slug_field="slug", queryset=Project.objects.all())
 
     class Meta:
         model = Resource
@@ -195,8 +196,13 @@ class CreateDatabaseSerializer(serializers.ModelSerializer):
             "preset",
             "engine",
             "username",
+            "project",
         )
 
+    def validate_project(self, obj):
+        if obj.organization != self.context["organization"]:
+            raise serializers.ValidationError("Project not found")
+        return obj
 
 class CreateCacheSerializer(serializers.ModelSerializer):
     engine = serializers.ChoiceField(choices=[Resource.EngineTypes.redis])

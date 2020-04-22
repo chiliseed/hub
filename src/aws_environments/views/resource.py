@@ -3,11 +3,12 @@ from rest_framework.response import Response
 
 
 from rest_framework.generics import GenericAPIView
+from rest_framework.viewsets import ModelViewSet
 
 from aws_environments.constants import InfraStatus
 from aws_environments.jobs import launch_database, launch_cache
 from aws_environments.models import Resource, Environment, ResourceConf, ExecutionLog
-from aws_environments.serializers import CreateDatabaseSerializer
+from aws_environments.serializers import CreateDatabaseSerializer, ResourceSerializer
 from common.crypto import get_uuid_hex
 
 
@@ -66,7 +67,7 @@ class CreateDatabaseResource(GenericAPIView):
 
         launch_database.delay(resource.id, exec_log.id)
 
-        return Response(data=dict(log=exec_log.slug), status=status.HTTP_201_CREATED)
+        return Response(data=dict(log=exec_log.slug, db=resource.slug), status=status.HTTP_201_CREATED)
 
 
 class CreateCacheResource(GenericAPIView):
@@ -83,6 +84,9 @@ class CreateCacheResource(GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         resource = Resource.objects.create(
+            organization=environment.organization,
+            environment=environment,
+            project=serializer.validated_data["project"],
             identifier=Resource.generate_identifier(
                 serializer.validated_data["name"], environment
             ),
@@ -100,6 +104,7 @@ class CreateCacheResource(GenericAPIView):
             engine_version=engine_defaults.engine_version,
             port=engine_defaults.port,
             number_of_nodes=preset.number_of_nodes,
+            password=get_uuid_hex(30),
         )
         resource.set_conf(resource_conf)
         resource.set_status(InfraStatus.changes_pending, request.user)
@@ -114,4 +119,8 @@ class CreateCacheResource(GenericAPIView):
 
         launch_cache.delay(resource.id, exec_log.id)
 
-        return Response(data=dict(log=exec_log.slug), status=status.HTTP_201_CREATED)
+        return Response(data=dict(log=exec_log.slug, cache=resource.slug), status=status.HTTP_201_CREATED)
+
+
+class Resources(ModelViewSet):
+    serializer_class = ResourceSerializer

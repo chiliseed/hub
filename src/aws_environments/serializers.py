@@ -214,3 +214,22 @@ class CreateCacheSerializer(serializers.ModelSerializer):
             "preset",
             "engine",
         )
+
+
+class ResourceSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Resource
+        fields = (
+            "slug",
+            "identifier",
+            "name",
+            "kind",
+            "preset",
+            "engine",
+            "status",
+        )
+
+    def get_status(self, obj):
+        return obj.last_status.status

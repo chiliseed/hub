@@ -12,6 +12,7 @@ from aws_environments.views import (
     ExecutionLogDetailsView,
     WorkerDetails,
 )
+from aws_environments.views.env_vars import ProjectEnvironmentVariables
 from aws_environments.views.environment import EnvironmentListServices
 from aws_environments.views.resource import CreateDatabaseResource, CreateCacheResource
 
@@ -45,6 +46,11 @@ urlpatterns = [
             {"post": "create", "get": "list", "patch": "update"}
         ),
         name="services",
+    ),
+    path(
+        "project/<slug:project_slug>/environment-variables/",
+        ProjectEnvironmentVariables.as_view({"get": "list", "post": "create", "delete": "destroy"}),
+        name="project_env_vars"
     ),
     path(
         "service/<slug:slug>/build", CreateWorker.as_view(), name="launch_build_worker"

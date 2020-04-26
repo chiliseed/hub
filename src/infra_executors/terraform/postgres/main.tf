@@ -22,8 +22,8 @@ data "aws_subnet_ids" "private" {
 }
 
 resource "aws_security_group" "db" {
-  name_prefix = "${var.environment}-${var.name}-db-"
-  description = "Managed by Chiliseed."
+  name_prefix = "${var.identifier}-db-"
+  description = "Managed by Chiliseed. SG for db ${var.identifier}"
   vpc_id      = var.vpc_id
 
   lifecycle {

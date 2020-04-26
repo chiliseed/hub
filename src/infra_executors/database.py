@@ -2,7 +2,7 @@
 from typing import Any, NamedTuple, List
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
-from infra_executors.constructors import build_project_state_key
+from infra_executors.constructors import build_project_state_key, build_resource_state_key
 from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import (
     ExecutorConfiguration,
@@ -38,7 +38,7 @@ def create_postgresql(
             name="postgres",
             action="create",
             config_dir="postgres",
-            state_key=build_project_state_key(params, "postgres"),
+            state_key=build_resource_state_key(params, "postgres"),
         ),
     )
     return executor.execute_apply()

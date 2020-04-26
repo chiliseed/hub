@@ -105,7 +105,7 @@ class Resource(BaseModel):
         Project, related_name="resources", on_delete=models.PROTECT, null=True
     )
 
-    identifier = models.CharField(max_length=150)
+    identifier = models.CharField(max_length=150, null=True, blank=True)
     name = models.CharField(max_length=150)
     kind = models.CharField(max_length=50, choices=Types.choices)
     configuration = EncryptedTextField(default="{}")
@@ -119,14 +119,10 @@ class Resource(BaseModel):
         related_name="resource_object",
     )
 
-    is_deleted = models.BooleanField(default=False)
-    deleted_at = models.DateTimeField(null=True)
-
     def __str__(self):
         return f"#{self.id} | Kind: {self.kind} | Identifier: {self.identifier}"
 
-    @staticmethod
-    def generate_identifier(resource_name, environment):
+    def set_identifier(self, resource_name, environment):
         """Generate resource identifier string.
 
         Parameters
@@ -138,7 +134,8 @@ class Resource(BaseModel):
         -------
         str
         """
-        return f"{environment.name}-{resource_name}-{environment.slug}"
+        self.identifier = f"{environment.name}-{resource_name}-{self.slug}"
+        self.save(update_fields=["identifier"])
 
     def set_status(self, status, actor=None):
         """Change status of a resource."""

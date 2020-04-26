@@ -14,7 +14,7 @@ from aws_environments.views import (
 )
 from aws_environments.views.env_vars import ProjectEnvironmentVariables
 from aws_environments.views.environment import EnvironmentListServices
-from aws_environments.views.resource import CreateDatabaseResource, CreateCacheResource
+from aws_environments.views.resource import CreateDatabaseResource, CreateCacheResource, ProjectResources, Resources
 
 app_name = "aws_env"
 urlpatterns = [
@@ -53,6 +53,11 @@ urlpatterns = [
         name="project_env_vars"
     ),
     path(
+        "project/<slug:project_slug>/resources/",
+        ProjectResources.as_view({"get": "list"}),
+        name="project_resources"
+    ),
+    path(
         "service/<slug:slug>/build", CreateWorker.as_view(), name="launch_build_worker"
     ),
     path("service/<slug:slug>/deploy", DeployService.as_view(), name="deploy_service"),
@@ -69,4 +74,7 @@ urlpatterns = [
         ExecutionLogDetailsView.as_view(),
         name="execution_log_details",
     ),
+    path(
+        "resource/<slug:slug>", Resources.as_view({"get": "retrieve"}), name="resource_details"
+    )
 ]

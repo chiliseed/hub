@@ -204,6 +204,7 @@ class CreateDatabaseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Project not found")
         return obj
 
+
 class CreateCacheSerializer(serializers.ModelSerializer):
     engine = serializers.ChoiceField(choices=[Resource.EngineTypes.redis])
 
@@ -218,6 +219,7 @@ class CreateCacheSerializer(serializers.ModelSerializer):
 
 class ResourceSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
+    configuration = serializers.SerializerMethodField()
 
     class Meta:
         model = Resource
@@ -229,7 +231,13 @@ class ResourceSerializer(serializers.ModelSerializer):
             "preset",
             "engine",
             "status",
+            "configuration",
+            "created_at",
+            "updated_at",
         )
 
     def get_status(self, obj):
         return obj.last_status.status
+
+    def get_configuration(self, obj):
+        return obj.conf().to_dict()

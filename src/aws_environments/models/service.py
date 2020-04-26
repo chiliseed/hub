@@ -88,8 +88,6 @@ class Service(BaseModel):
         related_name="service_object",
     )
 
-    is_deleted = models.BooleanField(default=False)
-
     def __str__(self):
         return f"#{self.id} | Name: {self.name} |  Project #{self.project.id}"
 

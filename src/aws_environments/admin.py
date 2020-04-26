@@ -115,11 +115,14 @@ class BuildWorkerAdmin(admin.ModelAdmin):
 
 
 class ResourceAdmin(admin.ModelAdmin):
-    list_display = ("id", "slug", "organization", "environment", "project", "identifier", "kind", "preset", "engine")
-    list_filter = ("engine", "preset", "kind")
+    list_display = ("id", "slug", "organization", "environment", "project", "identifier", "kind", "preset", "engine", "status", "is_deleted")
+    list_filter = ("engine", "preset", "kind", "is_deleted")
     search_fields = ("id", "slug", "identifier")
     readonly_fields = ("id", "slug")
     list_display_links = ("id", "project", "organization", "environment")
+
+    def status(self, obj):
+        return obj.last_status.status
 
 
 admin.site.register(Environment, EnvironmentAdmin)

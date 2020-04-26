@@ -32,3 +32,4 @@ class GeneralConfiguration(NamedTuple):
     project_name: str
     run_id: str
     vpc_id: str = ""
+    resource_id: str = ""

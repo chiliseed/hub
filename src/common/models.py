@@ -10,8 +10,8 @@ class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    is_deleted = models.BooleanField(default=False)
-    deleted_at = models.DateTimeField(null=True)
+    is_deleted = models.BooleanField(default=False, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     # slug is used for api, instead of id, in order to obscure db state
     slug = models.SlugField(max_length=20, null=True, unique=True, db_index=True)

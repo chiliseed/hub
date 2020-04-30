@@ -32,14 +32,14 @@ class EnvironmentVariables(ModelViewSet):
 
         key_name = f"{service.get_ssm_prefix()}{serializer.validated_data['key_name']}"
         logger.info("Adding new variable: %s", key_name)
+        # fmt: off
         client.put_parameter(
             Name=key_name,
             Value=serializer.validated_data["key_value"],
-            Type="SecureString"
-            if serializer.validated_data.get("is_secure", True)
-            else "String",
+            Type="SecureString" if serializer.validated_data.get("is_secure", True) else "String",
             Overwrite=True,
         )
+        # fmt: on
 
         headers = self.get_success_headers(serializer.data)
         return Response(

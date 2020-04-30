@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Union
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -45,6 +46,18 @@ class ResourceConf(BaseConf):
 
 
 @dataclass
+class BucketConf(BaseConf):
+    bucket: str
+    arn: str
+    bucket_domain_name: str
+    bucket_regional_domain_name: str
+    r53_zone_id: str
+    region: str
+    website_endpoint: str
+    website_domain: str
+
+
+@dataclass
 class DBPreset:
     instance_type: str
     allocated_storage: int
@@ -68,14 +81,17 @@ class Resource(BaseModel):
     class Types(models.TextChoices):
         db = "database"
         cache = "cache"
+        bucket = "bucket"
 
     class Presets(models.TextChoices):
         dev = "dev"
         prod = "prod"
+        statics = "statics"
 
     class EngineTypes(models.TextChoices):
         postgres = "postgres"
         redis = "redis"
+        s3 = "s3"
 
     ENGINE_DEFAULTS = {
         EngineTypes.postgres: EngineDefaults(5432, "11.6"),
@@ -151,9 +167,12 @@ class Resource(BaseModel):
         self.save(update_fields=["last_status"])
 
     def conf(self):
-        return ResourceConf(**json.loads(self.configuration))
+        conf_params = json.loads(self.configuration)
+        if self.kind in (self.Types.cache, self.Types.db):
+            return ResourceConf(**conf_params)
+        return BucketConf(**conf_params)
 
-    def set_conf(self, resource_conf: ResourceConf):
+    def set_conf(self, resource_conf: Union[ResourceConf, BucketConf]):
         self.configuration = resource_conf.to_str()
         self.save(update_fields=["configuration"])
 

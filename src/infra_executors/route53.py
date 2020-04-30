@@ -1,15 +1,15 @@
 """Manages Route53 resource."""
+import logging
 from typing import Any, List, NamedTuple
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_environment_state_key
-from infra_executors.logger import get_logger
 from infra_executors.terraform_executor import (
     ExecutorConfiguration,
     TerraformExecutor,
 )
 
-logger = get_logger("r53-infra-executor")
+logger = logging.getLogger(__name__)
 
 
 class CnameSubDomain(NamedTuple):

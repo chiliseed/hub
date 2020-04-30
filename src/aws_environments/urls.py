@@ -14,7 +14,8 @@ from aws_environments.views import (
 )
 from aws_environments.views.env_vars import ProjectEnvironmentVariables
 from aws_environments.views.environment import EnvironmentListServices
-from aws_environments.views.resource import CreateDatabaseResource, CreateCacheResource, ProjectResources, Resources
+from aws_environments.views.resource import CreateDatabaseResource, CreateCacheResource, CreateStaticsBucket, \
+    ProjectResources, Resources
 
 app_name = "aws_env"
 urlpatterns = [
@@ -61,6 +62,7 @@ urlpatterns = [
         "service/<slug:slug>/build", CreateWorker.as_view(), name="launch_build_worker"
     ),
     path("service/<slug:slug>/deploy", DeployService.as_view(), name="deploy_service"),
+    path("service/<slug:service_slug>/add-statics-bucket", CreateStaticsBucket.as_view(), name="add_statics_bucket"),
     path(
         "service/<slug:slug>/environment-variables/",
         EnvironmentVariables.as_view(

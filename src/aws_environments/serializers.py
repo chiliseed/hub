@@ -217,6 +217,14 @@ class CreateCacheSerializer(serializers.ModelSerializer):
         )
 
 
+class CreateS3BucketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resource
+        fields = (
+            "name",
+        )
+
+
 class ResourceSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     configuration = serializers.SerializerMethodField()

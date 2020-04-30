@@ -7,9 +7,9 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.viewsets import ModelViewSet
 
 from aws_environments.constants import InfraStatus
-from aws_environments.jobs import launch_database, launch_cache
-from aws_environments.models import Project, Resource, Environment, ResourceConf, ExecutionLog
-from aws_environments.serializers import CreateDatabaseSerializer, ResourceSerializer
+from aws_environments.jobs import create_statics_bucket, launch_database, launch_cache
+from aws_environments.models import Project, Resource, Environment, ResourceConf, ExecutionLog, Service
+from aws_environments.serializers import CreateDatabaseSerializer, CreateS3BucketSerializer, ResourceSerializer
 from common.crypto import get_uuid_hex
 
 
@@ -138,6 +138,60 @@ class CreateCacheResource(GenericAPIView):
         )
 
         launch_cache.delay(resource.id, exec_log.id)
+
+        return Response(data=dict(log=exec_log.slug, resource=resource.slug), status=status.HTTP_201_CREATED)
+
+
+class CreateStaticsBucket(GenericAPIView):
+    serializer_class = CreateS3BucketSerializer
+    lookup_field = "slug"
+    lookup_url_kwarg = "service_slug"
+
+    def get_queryset(self):
+        return Service.objects.filter(
+            is_deleted=False,
+            organization=self.request.user.organization,
+        )
+
+    def post(self, request, *arg, **kwargs):
+        service = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        resource, created = Resource.objects.get_or_create(
+            organization=service.organization,
+            environment=service.environment,
+            project=service.project,
+            name=serializer.validated_data["name"],
+            kind=Resource.Types.bucket,
+            preset=Resource.Presets.statics,
+            engine=Resource.EngineTypes.s3,
+        )
+
+        if not created:
+            exec_log = ExecutionLog.objects.filter(
+                organization=service.organization,
+                action=ExecutionLog.ActionTypes.create,
+                component_id=resource.id,
+                component=ExecutionLog.Components.resource,
+            ).latest("created_at")
+            return Response(data=dict(log=exec_log.slug, resource=resource.slug))
+
+        resource.set_identifier(
+            serializer.validated_data["name"], service.environment
+        )
+
+        resource.set_status(InfraStatus.changes_pending, request.user)
+
+        exec_log = ExecutionLog.register(
+            self.request.user.organization,
+            ExecutionLog.ActionTypes.create,
+            request.data,
+            ExecutionLog.Components.resource,
+            resource.id,
+        )
+
+        create_statics_bucket.delay(resource.id, exec_log.id)
 
         return Response(data=dict(log=exec_log.slug, resource=resource.slug), status=status.HTTP_201_CREATED)
 

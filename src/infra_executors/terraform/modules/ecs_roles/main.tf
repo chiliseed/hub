@@ -30,6 +30,7 @@ data "template_file" "policy" {
     {
       "Action": [
         "ssm:GetParameters",
+        "ssm:GetParametersByPath",
         "ssm:DescribeParameters",
         "ecr:GetAuthorizationToken",
         "ecr:BatchCheckLayerAvailability",
@@ -37,7 +38,13 @@ data "template_file" "policy" {
         "ecr:BatchGetImage",
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
+        "logs:PutLogEvents",
+        "s3:PutObject",
+        "s3:GetObjectAcl",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:DeleteObject",
+        "s3:PutObjectAcl"
       ],
       "Effect": "Allow",
       "Resource": "*"

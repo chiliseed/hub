@@ -131,10 +131,17 @@ class Service(BaseModel):
         )
         env_vars = []
         for param in params["Parameters"]:
+            param_details = client.get_parameter(
+                Name=param['Name'],
+                WithDecryption=True
+            )['Parameter']
             env_vars.append(
                 dict(
                     name=param["Name"].split("/")[-1],
                     value_from=param["Name"],
+                    value=param_details['Value'],
+                    arn=param_details["ARN"],
+                    kind=param_details["Type"],
                     last_modified=param["LastModifiedDate"],
                 )
             )

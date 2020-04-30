@@ -14,6 +14,7 @@ from .project import Project
 from .environment import Environment
 from .utils import BaseConf
 
+
 User = get_user_model()
 
 
@@ -118,33 +119,63 @@ class Service(BaseModel):
         """Returns prefix for parameter store env vars."""
         return f"/{self.project.environment.name}/{self.project.name}/{self.name}/"
 
-    def get_env_vars(self):
-        client = get_boto3_client("ssm", self.project.environment.get_creds())
-        params = client.describe_parameters(
-            ParameterFilters=[
-                {
-                    "Key": "Name",
-                    "Option": "BeginsWith",
-                    "Values": [self.get_ssm_prefix()],
-                }
-            ]
-        )
-        env_vars = []
-        for param in params["Parameters"]:
-            param_details = client.get_parameter(
-                Name=param['Name'],
-                WithDecryption=True
-            )['Parameter']
-            env_vars.append(
-                dict(
-                    name=param["Name"].split("/")[-1],
-                    value_from=param["Name"],
-                    value=param_details['Value'],
-                    arn=param_details["ARN"],
-                    kind=param_details["Type"],
-                    last_modified=param["LastModifiedDate"],
-                )
+    def env_vars_generator(self, client):
+        """Paginate over all env variables for this service in System Manager.
+
+        Parameters
+        ----------
+        client : boto3.client
+
+        Returns
+        -------
+        list of dict
+        """
+        get_more = True
+        next_token = None
+        while get_more:
+            request_params = dict(
+                ParameterFilters=[
+                    {
+                        "Key": "Name",
+                        "Option": "BeginsWith",
+                        "Values": [self.get_ssm_prefix()],
+                    }
+                ],
+                MaxResults=50,
             )
+            if next_token:
+                request_params["NextToken"] = next_token
+
+            env_vars = client.describe_parameters(**request_params)
+            next_token = env_vars.get("NextToken")
+            yield env_vars['Parameters']
+            get_more = next_token is not None
+
+    def get_env_vars(self):
+        """Get service env vars.
+
+        Returns
+        -------
+        list of dict
+        """
+        client = get_boto3_client("ssm", self.project.environment.get_creds())
+        env_vars = []
+        for parameters in self.env_vars_generator(client):
+            for param in parameters:
+                param_details = client.get_parameter(
+                    Name=param['Name'],
+                    WithDecryption=True
+                )['Parameter']
+                env_vars.append(
+                    dict(
+                        name=param["Name"].split("/")[-1],
+                        value_from=param["Name"],
+                        value=param_details['Value'],
+                        arn=param_details["ARN"],
+                        kind=param_details["Type"],
+                        last_modified=param["LastModifiedDate"],
+                    )
+                )
 
         return env_vars
 

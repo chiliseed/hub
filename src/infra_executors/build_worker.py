@@ -15,9 +15,9 @@ class BuildWorkerConfigs(NamedTuple):
     env_name: str
     code_version: str
     service_name: str
-    dockerfile: str
     ecr_url: str
     valid_until: str
+    dockerfile: str
     dockerfile_target: str = ""
     worker_ami: str = "ami-0cef0a0c24a179fb3"
     spot_max_price: str = "0.1"

@@ -31,9 +31,11 @@ data "template_file" "init" {
     aws_access_key_secret = var.aws_access_key_secret
     env_name              = var.env_name
     code_version          = var.code_version
+    dockerfile            = var.dockerfile
     dockerfile_target     = var.dockerfile_target
     service_name          = var.service_name
     ecr_url               = var.ecr_url
+    build_tool_version    = var.build_tool_version
   }
 }
 
@@ -59,8 +61,9 @@ resource "aws_spot_instance_request" "build-worker" {
 
   tags = {
     Note      = "Managed by Chiliseed"
-    Name      = "BuildWorker"
+    Name      = "build-worker-${var.service_name}"
     Component = "DevOps"
+    Service   = var.service_name
   }
 }
 

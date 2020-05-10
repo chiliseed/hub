@@ -31,6 +31,7 @@ variable "code_version" {
 variable "dockerfile_target" {
   type    = string
   default = ""
+  description = "Specific dockerfile stage to build."
 }
 
 variable "dockerfile" {
@@ -54,4 +55,10 @@ variable "vpc_id" {
 variable "valid_until" {
   type        = string
   description = "The end date and time of the request, in UTC RFC3339 format(for example, YYYY-MM-DDTHH:MM:SSZ)"
+}
+
+variable "build_tool_version" {
+  type = string
+  description = "Version of chiliseed build worker tool to be pulled from S3"
+  default = "0.1.0"
 }

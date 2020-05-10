@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class S3Configs(NamedTuple):
     """Bucket configuration."""
+
     bucket_name: str
     acl: str
 

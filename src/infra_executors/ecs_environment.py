@@ -81,7 +81,7 @@ def launch_project_infra(
     )
 
     logger.info("Launching ECS cluster")
-    ecs_conf = build_ecs_conf(alb, common_conf)
+    ecs_conf = build_ecs_conf(alb["alb_security_group_id"]["value"], common_conf)
     ecs = create_ecs_cluster(creds, common_conf, ecs_conf)
     logger.info("Created ECS cluster %s", ecs["cluster"])
     return alb, ecs

@@ -45,7 +45,7 @@ class CreateWorker(CreateAPIView):
             project=service.project,
             is_deleted=False,
         )
-        if not created:
+        if not created and worker.instance_id:
             ec2_client = get_boto3_client(
                 "ec2", service.project.environment.get_creds()
             )
@@ -57,7 +57,7 @@ class CreateWorker(CreateAPIView):
                             "Values": ["16"],
                         },  # running state
                     ],
-                    InstanceIds=[worker.instance_id,],
+                    InstanceIds=[worker.instance_id, ],
                 )
                 if len(resp["InstanceStatuses"]) == 1:
                     logger.info("Worker is still alive. worker_id=%s", worker.id)

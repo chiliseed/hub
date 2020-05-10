@@ -123,6 +123,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             "ecr_repo_url",
             "has_web_interface",
             "default_dockerfile_path",
+            "default_dockerfile_target",
         )
         read_only_fields = ("slug",)
 
@@ -187,7 +188,9 @@ class EnvironmentVariableSerializer(serializers.Serializer):
 class CreateDatabaseSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
     engine = serializers.ChoiceField(choices=[Resource.EngineTypes.postgres])
-    project = serializers.SlugRelatedField(slug_field="slug", queryset=Project.objects.all())
+    project = serializers.SlugRelatedField(
+        slug_field="slug", queryset=Project.objects.all()
+    )
 
     class Meta:
         model = Resource
@@ -220,9 +223,7 @@ class CreateCacheSerializer(serializers.ModelSerializer):
 class CreateS3BucketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resource
-        fields = (
-            "name",
-        )
+        fields = ("name",)
 
 
 class ResourceSerializer(serializers.ModelSerializer):

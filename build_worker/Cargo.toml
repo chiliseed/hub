@@ -13,3 +13,4 @@ rusoto_core = "0.43.0"
 rusoto_credential = "0.43.0"
 rusoto_ecr = "0.43.0"
 tokio = {version = "0.2", features = ["rt-core", "macros"]}
+structopt = { version = "0.3", default-features = false }

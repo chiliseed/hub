@@ -8,8 +8,19 @@ from rest_framework.viewsets import ModelViewSet
 
 from aws_environments.constants import InfraStatus
 from aws_environments.jobs import create_statics_bucket, launch_database, launch_cache
-from aws_environments.models import Project, Resource, Environment, ResourceConf, ExecutionLog, Service
-from aws_environments.serializers import CreateDatabaseSerializer, CreateS3BucketSerializer, ResourceSerializer
+from aws_environments.models import (
+    Project,
+    Resource,
+    Environment,
+    ResourceConf,
+    ExecutionLog,
+    Service,
+)
+from aws_environments.serializers import (
+    CreateDatabaseSerializer,
+    CreateS3BucketSerializer,
+    ResourceSerializer,
+)
 from common.crypto import get_uuid_hex
 
 
@@ -49,9 +60,7 @@ class CreateDatabaseResource(GenericAPIView):
             ).latest("created_at")
             return Response(data=dict(log=exec_log.slug, resource=resource.slug))
 
-        resource.set_identifier(
-            serializer.validated_data["name"], environment
-        )
+        resource.set_identifier(serializer.validated_data["name"], environment)
 
         preset = Resource.DB_PRESETS[resource.preset]
         engine_defaults = Resource.ENGINE_DEFAULTS[resource.engine]
@@ -61,7 +70,7 @@ class CreateDatabaseResource(GenericAPIView):
             engine_version=engine_defaults.engine_version,
             allocated_storage=preset.allocated_storage,
             username=serializer.validated_data["username"],
-            password=get_uuid_hex(35),
+            password=get_uuid_hex(20),
             port=engine_defaults.port,
         )
         resource.set_conf(resource_conf)
@@ -77,7 +86,10 @@ class CreateDatabaseResource(GenericAPIView):
 
         launch_database.delay(resource.id, exec_log.id)
 
-        return Response(data=dict(log=exec_log.slug, resource=resource.slug), status=status.HTTP_201_CREATED)
+        return Response(
+            data=dict(log=exec_log.slug, resource=resource.slug),
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class CreateCacheResource(GenericAPIView):
@@ -112,9 +124,7 @@ class CreateCacheResource(GenericAPIView):
             ).latest("created_at")
             return Response(data=dict(log=exec_log.slug, resource=resource.slug))
 
-        resource.set_identifier(
-            serializer.validated_data["name"], environment
-        )
+        resource.set_identifier(serializer.validated_data["name"], environment)
 
         preset = Resource.CACHE_PRESETS[resource.preset]
         engine_defaults = Resource.ENGINE_DEFAULTS[resource.engine]
@@ -139,7 +149,10 @@ class CreateCacheResource(GenericAPIView):
 
         launch_cache.delay(resource.id, exec_log.id)
 
-        return Response(data=dict(log=exec_log.slug, resource=resource.slug), status=status.HTTP_201_CREATED)
+        return Response(
+            data=dict(log=exec_log.slug, resource=resource.slug),
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class CreateStaticsBucket(GenericAPIView):
@@ -149,8 +162,7 @@ class CreateStaticsBucket(GenericAPIView):
 
     def get_queryset(self):
         return Service.objects.filter(
-            is_deleted=False,
-            organization=self.request.user.organization,
+            is_deleted=False, organization=self.request.user.organization,
         )
 
     def post(self, request, *arg, **kwargs):
@@ -162,6 +174,7 @@ class CreateStaticsBucket(GenericAPIView):
             organization=service.organization,
             environment=service.environment,
             project=service.project,
+            service=service,
             name=serializer.validated_data["name"],
             kind=Resource.Types.bucket,
             preset=Resource.Presets.statics,
@@ -177,9 +190,7 @@ class CreateStaticsBucket(GenericAPIView):
             ).latest("created_at")
             return Response(data=dict(log=exec_log.slug, resource=resource.slug))
 
-        resource.set_identifier(
-            serializer.validated_data["name"], service.environment
-        )
+        resource.set_identifier(serializer.validated_data["name"], service.environment)
 
         resource.set_status(InfraStatus.changes_pending, request.user)
 
@@ -193,7 +204,10 @@ class CreateStaticsBucket(GenericAPIView):
 
         create_statics_bucket.delay(resource.id, exec_log.id)
 
-        return Response(data=dict(log=exec_log.slug, resource=resource.slug), status=status.HTTP_201_CREATED)
+        return Response(
+            data=dict(log=exec_log.slug, resource=resource.slug),
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class Resources(ModelViewSet):
@@ -203,8 +217,7 @@ class Resources(ModelViewSet):
 
     def get_queryset(self):
         return Resource.objects.filter(
-            is_deleted=False,
-            organization=self.request.user.organization
+            is_deleted=False, organization=self.request.user.organization
         )
 
 
@@ -215,15 +228,23 @@ class ProjectResources(ModelViewSet):
 
     def get_queryset(self):
         project = self.get_object()
-        qs = Resource.objects.filter(project=project, is_deleted=False)
-        if "kind" in self.kwargs:
-            qs.filter(kind=self.kwargs["kind"])
-        return qs
+        params = dict(
+            project=project,
+            is_deleted=False,
+            organization=self.request.user.organization
+        )
+
+        if "kind" in self.request.query_params:
+            params["kind"] = self.request.query_params["kind"]
+        if "identifier" in self.request.query_params:
+            params["identifier"] = self.request.query_params["identifier"]
+
+        return Resource.objects.filter(**params)
 
     def get_object(self):
         return get_object_or_404(
             Project,
             is_deleted=False,
             organization=self.request.user.organization,
-            slug=self.kwargs[self.lookup_url_kwarg]
+            slug=self.kwargs[self.lookup_url_kwarg],
         )

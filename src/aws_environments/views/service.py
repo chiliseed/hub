@@ -1,10 +1,11 @@
 from django.db import transaction
 from rest_framework import status
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from aws_environments.jobs import create_service_infra, update_service_infra
-from aws_environments.models import Project, ExecutionLog, Service
+from aws_environments.jobs import create_service_infra, launch_database, update_service_infra
+from aws_environments.models import Project, ExecutionLog, Resource, Service
 from aws_environments.serializers import ServiceSerializer
 from aws_environments.utils import check_if_service_can_be_created
 
@@ -67,6 +68,7 @@ class CreateListUpdateServices(ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         project = self.get_object()
         if not project.is_ready():
@@ -95,7 +97,11 @@ class CreateListUpdateServices(ModelViewSet):
 
         serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
-        service = serializer.save(project=project)
+        service = serializer.save(
+            project=project,
+            organization=project.organization,
+            environment=project.environment,
+        )
 
         exec_log = ExecutionLog.register(
             self.request.user.organization,
@@ -125,3 +131,33 @@ class CreateListUpdateServices(ModelViewSet):
             ).data,
             status=status.HTTP_200_OK,
         )
+
+
+class AddDB(GenericAPIView):
+    lookup_url_kwarg = "service_slug"
+    lookup_field = "slug"
+
+    def get_queryset(self):
+        return Service.objects.filter(is_deleted=False, organization=self.request.user.organization)
+
+    def post(self, request, *args, **kwargs):
+        _service = self.get_object()
+        db = Resource.objects.filter(
+            organization=self.request.user.organization,
+            kind=Resource.Types.db,
+            slug=self.request.data["db_slug"]
+        ).first()
+
+        if not db:
+            return Response(data={"detail": "related resource not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        exec_log = ExecutionLog.register(
+            self.request.user.organization,
+            ExecutionLog.ActionTypes.update,
+            request.data,
+            ExecutionLog.Components.resource,
+            db.id,
+        )
+
+        launch_database.delay(db.id, exec_log.id)
+        return Response(data=dict(log=exec_log.slug))

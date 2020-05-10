@@ -7,7 +7,7 @@ from aws_environments.models.resource import BucketConf
 from infra_executors.cache import CacheConfigs, create_cache, destroy_cache
 from infra_executors.database import DBConfigs, create_postgresql, destroy_postgresql
 from infra_executors.ecs_environment import get_project_details
-from infra_executors.s3_bucket import S3Configs, create_bucket
+from infra_executors.s3_bucket import S3Configs, create_bucket, destroy_bucket
 
 logger = get_task_logger(__name__)
 
@@ -255,7 +255,9 @@ def remove_cache(resource_id, exec_log_id):
 def create_statics_bucket(resource_id, exec_log_id):
     """Create S3 statics buckets."""
     logger.info(
-        "Creating statics bucket. resource_id=%s exec_log_id=%s", resource_id, exec_log_id
+        "Creating statics bucket. resource_id=%s exec_log_id=%s",
+        resource_id,
+        exec_log_id,
     )
 
     resource = Resource.objects.get(id=resource_id)
@@ -277,22 +279,63 @@ def create_statics_bucket(resource_id, exec_log_id):
         exec_log.mark_result(False)
         return False
 
-    resource.set_conf(BucketConf(
-        bucket=resp["bucket"]["value"],
-        arn=resp["arn"]["value"],
-        bucket_domain_name=resp["bucket_domain_name"]["value"],
-        bucket_regional_domain_name=resp["bucket_regional_domain_name"]["value"],
-        r53_zone_id=resp["r53_zone_id"]["value"],
-        region=resp["region"]['value'],
-        website_endpoint="",
-        website_domain=""
-    ))
+    resource.set_conf(
+        BucketConf(
+            bucket=resp["bucket"]["value"],
+            arn=resp["arn"]["value"],
+            bucket_domain_name=resp["bucket_domain_name"]["value"],
+            bucket_regional_domain_name=resp["bucket_regional_domain_name"]["value"],
+            r53_zone_id=resp["r53_zone_id"]["value"],
+            region=resp["region"]["value"],
+            website_endpoint="",
+            website_domain="",
+        )
+    )
     resource.set_status(InfraStatus.ready)
     exec_log.mark_result(True)
 
     logger.info(
         "Created statics bucket: resource_id=%s exec_log_id=%s",
         resource_id,
+        exec_log_id,
+    )
+    return True
+
+
+@shared_task
+def remove_statics_bucket(resource_id, exec_log_id):
+    """Removes service statics bucket."""
+    logger.info(
+        "Destroying statics bucket. resource_id=%s exec_log_id=%s",
+        resource_id,
+        exec_log_id,
+    )
+
+    resource = Resource.objects.get(id=resource_id)
+    exec_log = ExecutionLog.objects.get(id=exec_log_id)
+
+    s3_conf = S3Configs(bucket_name=resource.identifier, acl="public-read")
+    creds = resource.environment.get_creds()
+    params = resource.project.get_common_conf(exec_log_id)
+
+    try:
+        destroy_bucket(creds, params, s3_conf)
+    except Exception:
+        logger.exception(
+            "Failed to destroy statics bucket. resource_id=%s exec_log_id=%s",
+            resource_id,
+            exec_log_id,
+        )
+        resource.set_status(InfraStatus.error)
+        exec_log.mark_result(False)
+        return False
+
+    resource.mark_deleted()
+    exec_log.mark_result(True)
+    logger.info(
+        "Removed statics bucket: %s resource_id=%s exec_log_id=%s",
+        resource.identifier,
+        resource.id,
         exec_log_id,
     )
     return True

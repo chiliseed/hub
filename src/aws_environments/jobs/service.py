@@ -6,7 +6,9 @@ from aws_environments.jobs.deployment import (
     get_deployment_conf,
     deploy_version_to_service,
 )
+from aws_environments.jobs.resource import remove_statics_bucket
 from aws_environments.models import (
+    Resource,
     Service,
     ExecutionLog,
     ServiceConf,
@@ -19,6 +21,7 @@ from infra_executors.ecs_service import (
     launch_infa_for_service,
     destroy_service_infra,
 )
+from infra_executors.utils import get_boto3_client
 
 logger = get_task_logger(__name__)
 
@@ -118,6 +121,14 @@ def create_service_infra(service_id, exec_log_id):
     return True
 
 
+def remove_env_vars(service):
+    client = get_boto3_client("ssm", service.project.environment.get_creds())
+    for env_vars in service.env_vars_generator(client, batch_size=10):
+        names = [env_var["Name"] for env_var in env_vars]
+        logger.info("Removing env vars: %s", names)
+        client.delete_parameters(Names=names)
+
+
 @shared_task
 def remove_service_infra(service_id, exec_log_id):
     logger.info(
@@ -150,6 +161,13 @@ def remove_service_infra(service_id, exec_log_id):
             service.project.environment.conf().r53_zone_id,
             service.subdomain,
         )
+
+        remove_env_vars(service)
+
+        for bucket in service.resources.filter(
+            is_deleted=False, kind=Resource.Types.bucket
+        ):
+            remove_statics_bucket(bucket.id, exec_log.id)
     except:
         logger.exception(
             "Failed to update project infra project_id=%s exec_log_id=%s",

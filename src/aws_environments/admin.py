@@ -4,7 +4,8 @@ from aws_environments.models import (
     Environment,
     Project,
     ExecutionLog,
-    Resource, Service,
+    Resource,
+    Service,
     BuildWorker,
 )
 
@@ -115,7 +116,19 @@ class BuildWorkerAdmin(admin.ModelAdmin):
 
 
 class ResourceAdmin(admin.ModelAdmin):
-    list_display = ("id", "slug", "organization", "environment", "project", "identifier", "kind", "preset", "engine", "status", "is_deleted")
+    list_display = (
+        "id",
+        "slug",
+        "organization",
+        "environment",
+        "project",
+        "identifier",
+        "kind",
+        "preset",
+        "engine",
+        "status",
+        "is_deleted",
+    )
     list_filter = ("engine", "preset", "kind", "is_deleted")
     search_fields = ("id", "slug", "identifier")
     readonly_fields = ("id", "slug")

@@ -14,8 +14,14 @@ from aws_environments.views import (
 )
 from aws_environments.views.env_vars import ProjectEnvironmentVariables
 from aws_environments.views.environment import EnvironmentListServices
-from aws_environments.views.resource import CreateDatabaseResource, CreateCacheResource, CreateStaticsBucket, \
-    ProjectResources, Resources
+from aws_environments.views.resource import (
+    CreateDatabaseResource,
+    CreateCacheResource,
+    CreateStaticsBucket,
+    ProjectResources,
+    Resources,
+)
+from aws_environments.views.service import AddDB
 
 app_name = "aws_env"
 urlpatterns = [
@@ -50,19 +56,30 @@ urlpatterns = [
     ),
     path(
         "project/<slug:project_slug>/environment-variables/",
-        ProjectEnvironmentVariables.as_view({"get": "list", "post": "create", "delete": "destroy"}),
-        name="project_env_vars"
+        ProjectEnvironmentVariables.as_view(
+            {"get": "list", "post": "create", "delete": "destroy"}
+        ),
+        name="project_env_vars",
     ),
     path(
         "project/<slug:project_slug>/resources/",
         ProjectResources.as_view({"get": "list"}),
-        name="project_resources"
+        name="project_resources",
     ),
     path(
         "service/<slug:slug>/build", CreateWorker.as_view(), name="launch_build_worker"
     ),
     path("service/<slug:slug>/deploy", DeployService.as_view(), name="deploy_service"),
-    path("service/<slug:service_slug>/add-statics-bucket", CreateStaticsBucket.as_view(), name="add_statics_bucket"),
+    path(
+        "service/<slug:service_slug>/add-statics-bucket",
+        CreateStaticsBucket.as_view(),
+        name="add_statics_bucket",
+    ),
+    path(
+        "service/<slug:service_slug>/add-db",
+        AddDB.as_view(),
+        name="add_db",
+    ),
     path(
         "service/<slug:slug>/environment-variables/",
         EnvironmentVariables.as_view(
@@ -77,6 +94,8 @@ urlpatterns = [
         name="execution_log_details",
     ),
     path(
-        "resource/<slug:slug>", Resources.as_view({"get": "retrieve"}), name="resource_details"
-    )
+        "resource/<slug:slug>",
+        Resources.as_view({"get": "retrieve"}),
+        name="resource_details",
+    ),
 ]

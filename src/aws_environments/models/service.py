@@ -72,7 +72,8 @@ class Service(BaseModel):
     name = models.CharField(max_length=100, null=False, blank=False)
 
     has_web_interface = models.BooleanField(default=True)
-    default_dockerfile_path = models.CharField(max_length=100, default="./Dockerfile")
+    default_dockerfile_path = models.CharField(max_length=100, default="Dockerfile")
+    default_dockerfile_target = models.CharField(max_length=100, null=True, blank=True)
 
     subdomain = models.CharField(max_length=50, null=True, blank=True)
     container_port = models.PositiveIntegerField(null=True, blank=True)
@@ -119,12 +120,14 @@ class Service(BaseModel):
         """Returns prefix for parameter store env vars."""
         return f"/{self.project.environment.name}/{self.project.name}/{self.name}/"
 
-    def env_vars_generator(self, client):
+    def env_vars_generator(self, client, batch_size=50):
         """Paginate over all env variables for this service in System Manager.
 
         Parameters
         ----------
         client : boto3.client
+        batch_size : int
+            optional max results to pull
 
         Returns
         -------
@@ -141,14 +144,14 @@ class Service(BaseModel):
                         "Values": [self.get_ssm_prefix()],
                     }
                 ],
-                MaxResults=50,
+                MaxResults=batch_size,
             )
             if next_token:
                 request_params["NextToken"] = next_token
 
             env_vars = client.describe_parameters(**request_params)
             next_token = env_vars.get("NextToken")
-            yield env_vars['Parameters']
+            yield env_vars["Parameters"]
             get_more = next_token is not None
 
     def get_env_vars(self):
@@ -163,14 +166,13 @@ class Service(BaseModel):
         for parameters in self.env_vars_generator(client):
             for param in parameters:
                 param_details = client.get_parameter(
-                    Name=param['Name'],
-                    WithDecryption=True
-                )['Parameter']
+                    Name=param["Name"], WithDecryption=True
+                )["Parameter"]
                 env_vars.append(
                     dict(
                         name=param["Name"].split("/")[-1],
                         value_from=param["Name"],
-                        value=param_details['Value'],
+                        value=param_details["Value"],
                         arn=param_details["ARN"],
                         kind=param_details["Type"],
                         last_modified=param["LastModifiedDate"],

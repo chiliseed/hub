@@ -80,13 +80,19 @@ class ProjectEnvironmentVariables(ModelViewSet):
     lookup_field = "slug"
 
     def get_queryset(self):
-        return Project.objects.filter(
-            organization=self.request.user.organization,
-            last_status__status=InfraStatus.ready,
-        ).prefetch_related("services").select_related("environment")
+        return (
+            Project.objects.filter(
+                organization=self.request.user.organization,
+                last_status__status=InfraStatus.ready,
+            )
+            .prefetch_related("services")
+            .select_related("environment")
+        )
 
     def get_object(self):
-        return get_object_or_404(self.get_queryset(), slug=self.kwargs[self.lookup_url_kwarg])
+        return get_object_or_404(
+            self.get_queryset(), slug=self.kwargs[self.lookup_url_kwarg]
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -96,7 +102,9 @@ class ProjectEnvironmentVariables(ModelViewSet):
         client = get_boto3_client("ssm", project.environment.get_creds())
         added_keys = []
         for service in project.services.filter(is_deleted=False):
-            key_name = f"{service.get_ssm_prefix()}{serializer.validated_data['key_name']}"
+            key_name = (
+                f"{service.get_ssm_prefix()}{serializer.validated_data['key_name']}"
+            )
 
             logger.info("Adding new variable: %s service_id=%s", key_name, service.id)
 
@@ -112,9 +120,7 @@ class ProjectEnvironmentVariables(ModelViewSet):
             added_keys.append(key_name)
 
         headers = self.get_success_headers(serializer.data)
-        return Response(
-            added_keys, status=status.HTTP_201_CREATED, headers=headers
-        )
+        return Response(added_keys, status=status.HTTP_201_CREATED, headers=headers)
 
     def list(self, request, *args, **kwargs):
         project = self.get_object()

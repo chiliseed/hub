@@ -17,19 +17,21 @@ def get_deployment_conf(deployment):
     project_conf = deployment.service.project.conf()
     env_vars = []
     for env_var in deployment.service.get_env_vars():
-        env_vars.append(SecretEnvVar(**env_var))
+        env_vars.append(
+            SecretEnvVar(name=env_var["name"], value_from=env_var["value_from"])
+        )
 
-    logger.debug("env vars are: {}", env_vars)
+    logger.debug("env vars are: %s", env_vars)
 
     return DeploymentConf(
+        container_port=deployment.service.container_port,
         ecs_cluster=project_conf.ecs_cluster,
         ecs_executor_role_arn=project_conf.ecs_executor_role_arn,
-        service_name=deployment.service.name,
         repo_url=service_conf.ecr_repo_url,
-        version=deployment.version,
-        container_port=deployment.service.container_port,
-        target_group_arn=service_conf.target_group_arn,
         secrets=env_vars,
+        service_name=deployment.service.name,
+        target_group_arn=service_conf.target_group_arn,
+        version=deployment.version,
     )
 
 

@@ -12,6 +12,7 @@ from common.models import BaseModel
 
 from .environment import Environment
 from .project import Project
+from .service import Service
 from .utils import BaseConf
 
 User = get_user_model()
@@ -118,7 +119,10 @@ class Resource(BaseModel):
         Environment, related_name="resources", on_delete=models.CASCADE
     )
     project = models.ForeignKey(
-        Project, related_name="resources", on_delete=models.PROTECT, null=True
+        Project, related_name="resources", on_delete=models.CASCADE, null=True
+    )
+    service = models.ForeignKey(
+        Service, related_name="resources", on_delete=models.CASCADE, null=True
     )
 
     identifier = models.CharField(max_length=150, null=True, blank=True)

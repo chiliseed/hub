@@ -10,7 +10,7 @@ How to build a release
 
 `docker pull ekidd/rust-musl-builder`
 
-` ✗ docker run --rm -it -v "$(pwd)":/home/rust/src ekidd/rust-musl-builder cargo build --release`
+`docker run --rm -it -v "$(pwd)":/home/rust/src ekidd/rust-musl-builder cargo build --release`
 
 Then to upload the release to S3:
 

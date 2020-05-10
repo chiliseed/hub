@@ -22,21 +22,26 @@ def launch_build_worker(build_worker_id, exec_log_id):
         build_worker_id,
         exec_log_id,
     )
-    worker = BuildWorker.objects.select_related(
-        "service", "service__project", "service__project__environment"
-    ).get(id=build_worker_id)
+    worker = (
+        BuildWorker.objects.select_related(
+            "service", "service__project", "service__project__environment"
+        )
+        .select_related("service", "project")
+        .get(id=build_worker_id)
+    )
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
 
-    creds = worker.service.project.environment.get_creds()
-    common_conf = worker.service.project.get_common_conf(exec_log_id, worker.service_id)
+    creds = worker.project.environment.get_creds()
+    common_conf = worker.project.get_common_conf(exec_log_id, worker.service_id)
     build_worker_conf = BuildWorkerConfigs(
-        ssh_key_name=worker.service.project.get_ssh_key_name(),
+        ssh_key_name=worker.project.get_ssh_key_name(),
         aws_access_key_id=creds.access_key,
         aws_access_key_secret=creds.secret_key,
-        env_name=worker.service.project.environment.name,
+        env_name=worker.project.environment.name,
         code_version=exec_log.get_params()["version"],
         service_name=worker.service.name,
         dockerfile=worker.service.default_dockerfile_path,
+        dockerfile_target=worker.service.default_dockerfile_target,
         ecr_url=worker.service.conf().ecr_repo_url,
         valid_until=(datetime.utcnow() + timedelta(minutes=5))
         .replace(tzinfo=timezone.utc)
@@ -65,7 +70,7 @@ def launch_build_worker(build_worker_id, exec_log_id):
     worker.launched_at = datetime.utcnow().replace(tzinfo=timezone.utc)
     worker.instance_id = infra["instance_id"]["value"]
     worker.public_ip = infra["instance_public_ip"]["value"]
-    worker.ssh_key_name = worker.service.project.get_ssh_key_name()
+    worker.ssh_key_name = worker.project.get_ssh_key_name()
     worker.save()
 
     exec_log.mark_result(True)

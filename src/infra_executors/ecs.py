@@ -29,7 +29,7 @@ class ECSConfigs(NamedTuple):
     ecs_aws_ami: str = ""
     # the key will be created automatically, if not provided
     ssh_key_name: str = ""
-    instance_type: str = "t2.micro"
+    instance_type: str = "t2.medium"
     max_size: int = 1
     min_size: int = 1
     desired_capacity: int = 1
@@ -51,7 +51,7 @@ def get_ecs_ami_id(aws_creds: AwsCredentials) -> str:
     """
     ssm_client = get_boto3_client("ssm", aws_creds)
     param = ssm_client.get_parameter(
-        Name="/aws/service/ecs/optimized-ami/" "amazon-linux-2/recommended/image_id",
+        Name="/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id",
     )
     return str(param["Parameter"]["Value"])
 

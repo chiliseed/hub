@@ -32,14 +32,14 @@ class SecretEnvVar:
 
 @dataclass
 class DeploymentConf:
+    container_port: int
     ecs_cluster: str
     ecs_executor_role_arn: str
-    service_name: str
     repo_url: str
-    version: str
-    container_port: int
-    target_group_arn: str
     secrets: Optional[List[SecretEnvVar]]
+    service_name: str
+    target_group_arn: str
+    version: str
 
 
 def put_task_definition(
@@ -99,27 +99,38 @@ def wait_for_service_scale(
     cluster: str,
     service_name: str,
     desired_count: int,
-    timeout_seconds: int = 10,
+    timeout_seconds: int = 1800,
     task_definition_arn: str = None,
 ) -> None:
     """Wait for service scale."""
+    logger.info(
+        "wait_for_service_scale cluster=%s service_name=%s desired_count=%s timeout_seconds=%s task_definition_arn=%s",
+        cluster, service_name, desired_count, timeout_seconds, task_definition_arn
+    )
+
     client = get_boto3_client("ecs", creds)
     waited_seconds = 0
-    while waited_seconds < timeout_seconds:
-        logger.info("Checking if service scaled to %s", desired_count)
+    while waited_seconds <= timeout_seconds:
+        logger.info("Checking if service scaled to %s waited_seconds=%s", desired_count, waited_seconds)
         resp = client.describe_services(cluster=cluster, services=[service_name])
         if not resp["services"]:
-            raise Exception("Service not found")
+            logger.error("Service not found")
+            return
 
         service = resp["services"][0]
         if task_definition_arn:
+            logger.info(
+                "Selecting service with task definition arn: %s", task_definition_arn
+            )
             service = [
                 d
                 for d in service["deployments"]
                 if d["taskDefinition"] == task_definition_arn
             ][0]
 
-        if service["runningCount"] == desired_count:
+        logger.info("Scaling checking scale for service: %s", service)
+
+        if int(service["runningCount"]) == desired_count:
             logger.info(
                 "Services %s scaled to desired count of %d",
                 service_name,
@@ -127,8 +138,8 @@ def wait_for_service_scale(
             )
             return
 
-        waited_seconds += 1
         sleep(1)
+        waited_seconds += 1
 
     raise Exception(
         f"Service {service_name} scale to "

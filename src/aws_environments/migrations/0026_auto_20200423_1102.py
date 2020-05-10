@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_environments', '0025_auto_20200324_1919'),
+        ("aws_environments", "0025_auto_20200324_1919"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='resource',
-            name='identifier',
+            model_name="resource",
+            name="identifier",
             field=models.CharField(blank=True, max_length=150, null=True),
         ),
     ]

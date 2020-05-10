@@ -232,6 +232,13 @@ class BuildWorker(BaseModel):
         related_name="service_builders",
         on_delete=models.CASCADE,
     )
+    project = models.ForeignKey(
+        Project,
+        related_name="builders",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=False,
+    )
     service = models.ForeignKey(
         Service, related_name="build_workers", on_delete=models.CASCADE
     )

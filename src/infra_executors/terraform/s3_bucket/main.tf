@@ -21,4 +21,6 @@ resource "aws_s3_bucket" "statics" {
     Name        = var.bucket_name
     Environment = var.enviroment
   }
+
+  force_destroy = true
 }

@@ -1,3 +1,5 @@
+import logging
+
 from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
@@ -7,7 +9,12 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.viewsets import ModelViewSet
 
 from aws_environments.constants import InfraStatus
-from aws_environments.jobs import create_statics_bucket, launch_database, launch_cache
+from aws_environments.jobs import (
+    create_statics_bucket,
+    launch_database,
+    launch_cache,
+    remove_statics_bucket,
+)
 from aws_environments.models import (
     Project,
     Resource,
@@ -22,6 +29,9 @@ from aws_environments.serializers import (
     ResourceSerializer,
 )
 from common.crypto import get_uuid_hex
+
+
+logger = logging.getLogger(__name__)
 
 
 class CreateDatabaseResource(GenericAPIView):
@@ -170,6 +180,8 @@ class CreateStaticsBucket(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        logger.info("Creating bucket in service. service_name=%s", service.name)
+
         resource, created = Resource.objects.get_or_create(
             organization=service.organization,
             environment=service.environment,
@@ -179,9 +191,11 @@ class CreateStaticsBucket(GenericAPIView):
             kind=Resource.Types.bucket,
             preset=Resource.Presets.statics,
             engine=Resource.EngineTypes.s3,
+            is_deleted=False,
         )
 
         if not created:
+            logger.info("Service statics bucket already exists.")
             exec_log = ExecutionLog.objects.filter(
                 organization=service.organization,
                 action=ExecutionLog.ActionTypes.create,
@@ -204,10 +218,69 @@ class CreateStaticsBucket(GenericAPIView):
 
         create_statics_bucket.delay(resource.id, exec_log.id)
 
+        logger.info(
+            "Set infra executors to create statics bucket. service_slug=%s resource_slug=%s",
+            service.slug,
+            resource.slug,
+        )
         return Response(
             data=dict(log=exec_log.slug, resource=resource.slug),
             status=status.HTTP_201_CREATED,
         )
+
+
+class RemoveStaticsBucket(GenericAPIView):
+    lookup_url_kwarg = "service_slug"
+    lookup_field = "slug"
+
+    def get_queryset(self):
+        return Service.objects.filter(
+            is_deleted=False, organization=self.request.user.organization
+        )
+
+    def post(self, request, *args, **kwargs):
+        logger.info("Getting service")
+        service = self.get_object()
+        logger.info(
+            "Accepted request to remove statics bucket from service_id=%s", service.id
+        )
+
+        statics_bucket = Resource.objects.filter(
+            service=service,
+            kind=Resource.Types.bucket,
+            preset=Resource.Presets.statics,
+            engine=Resource.EngineTypes.s3,
+            is_deleted=False,
+        ).first()
+
+        if not statics_bucket:
+            logger.info("Service has no statics bucket. service_id=%s", service.id)
+            return Response(
+                data=dict(detail="Service has not statics bucket"),
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        logger.info(
+            "Found service statics bucket. service_id=%s resource_id=%s",
+            service.id,
+            statics_bucket.id,
+        )
+
+        exec_log = ExecutionLog.register(
+            organization=request.user.organization,
+            action=ExecutionLog.ActionTypes.destroy,
+            params={"service_id": service.id},
+            component=ExecutionLog.Components.resource,
+            component_id=statics_bucket.id,
+        )
+        remove_statics_bucket.delay(statics_bucket.id, exec_log.id)
+
+        logger.info(
+            "Set infra executors to remove statics bucket. service_id=%s resource_id=%s",
+            service.id,
+            statics_bucket.id,
+        )
+        return Response(data=dict(log=exec_log.slug))
 
 
 class Resources(ModelViewSet):
@@ -231,7 +304,7 @@ class ProjectResources(ModelViewSet):
         params = dict(
             project=project,
             is_deleted=False,
-            organization=self.request.user.organization
+            organization=self.request.user.organization,
         )
 
         if "kind" in self.request.query_params:

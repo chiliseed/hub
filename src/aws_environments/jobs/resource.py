@@ -263,7 +263,7 @@ def create_statics_bucket(resource_id, exec_log_id):
     resource = Resource.objects.get(id=resource_id)
     exec_log = ExecutionLog.objects.get(id=exec_log_id)
 
-    s3_conf = S3Configs(bucket_name=resource.identifier, acl="public-read")
+    s3_conf = S3Configs(bucket_name=resource.identifier)
     creds = resource.environment.get_creds()
     params = resource.project.get_common_conf(exec_log_id)
 

@@ -105,13 +105,21 @@ def wait_for_service_scale(
     """Wait for service scale."""
     logger.info(
         "wait_for_service_scale cluster=%s service_name=%s desired_count=%s timeout_seconds=%s task_definition_arn=%s",
-        cluster, service_name, desired_count, timeout_seconds, task_definition_arn
+        cluster,
+        service_name,
+        desired_count,
+        timeout_seconds,
+        task_definition_arn,
     )
 
     client = get_boto3_client("ecs", creds)
     waited_seconds = 0
     while waited_seconds <= timeout_seconds:
-        logger.info("Checking if service scaled to %s waited_seconds=%s", desired_count, waited_seconds)
+        logger.info(
+            "Checking if service scaled to %s waited_seconds=%s",
+            desired_count,
+            waited_seconds,
+        )
         resp = client.describe_services(cluster=cluster, services=[service_name])
         if not resp["services"]:
             logger.error("Service not found")

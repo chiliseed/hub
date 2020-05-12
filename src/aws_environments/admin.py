@@ -44,6 +44,7 @@ class ServiceAdmin(admin.ModelAdmin):
         "slug",
         "id",
     )
+    search_fields = ("slug", "name", "id", )
 
     def organization(self, obj):
         return obj.project.organization

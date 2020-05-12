@@ -1,6 +1,6 @@
 """Manages AWS S3 buckets."""
 import logging
-from typing import Any, List, NamedTuple
+from typing import Any, NamedTuple
 
 from infra_executors.constants import AwsCredentials, GeneralConfiguration
 from infra_executors.constructors import build_resource_state_key
@@ -16,7 +16,7 @@ class S3Configs(NamedTuple):
     """Bucket configuration."""
 
     bucket_name: str
-    acl: str
+    acl: str = "private"
 
 
 def create_bucket(

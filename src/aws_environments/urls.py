@@ -2,26 +2,25 @@
 from django.urls import path
 
 from aws_environments.views import (
+    AddDB,
+    CreateCacheResource,
+    CreateDatabaseResource,
     CreateListProject,
     CreateListUpdateServices,
+    CreateStaticsBucket,
     CreateWorker,
     DeployService,
     EnvironmentCreate,
     EnvironmentList,
+    EnvironmentListServices,
     EnvironmentVariables,
     ExecutionLogDetailsView,
+    ProjectEnvironmentVariables,
+    ProjectResources,
+    RemoveStaticsBucket,
+    Resources,
     WorkerDetails,
 )
-from aws_environments.views.env_vars import ProjectEnvironmentVariables
-from aws_environments.views.environment import EnvironmentListServices
-from aws_environments.views.resource import (
-    CreateDatabaseResource,
-    CreateCacheResource,
-    CreateStaticsBucket,
-    ProjectResources,
-    Resources,
-)
-from aws_environments.views.service import AddDB
 
 app_name = "aws_env"
 urlpatterns = [
@@ -76,10 +75,11 @@ urlpatterns = [
         name="add_statics_bucket",
     ),
     path(
-        "service/<slug:service_slug>/add-db",
-        AddDB.as_view(),
-        name="add_db",
+        "service/<slug:service_slug>/remove-statics-bucket",
+        RemoveStaticsBucket.as_view(),
+        name="remove_statics_bucket",
     ),
+    path("service/<slug:service_slug>/add-db", AddDB.as_view(), name="add_db",),
     path(
         "service/<slug:slug>/environment-variables/",
         EnvironmentVariables.as_view(

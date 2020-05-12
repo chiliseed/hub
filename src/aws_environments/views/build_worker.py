@@ -57,7 +57,7 @@ class CreateWorker(CreateAPIView):
                             "Values": ["16"],
                         },  # running state
                     ],
-                    InstanceIds=[worker.instance_id, ],
+                    InstanceIds=[worker.instance_id,],
                 )
                 if len(resp["InstanceStatuses"]) == 1:
                     logger.info("Worker is still alive. worker_id=%s", worker.id)

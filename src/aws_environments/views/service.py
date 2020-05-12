@@ -4,7 +4,11 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from aws_environments.jobs import create_service_infra, launch_database, update_service_infra
+from aws_environments.jobs import (
+    create_service_infra,
+    launch_database,
+    update_service_infra,
+)
 from aws_environments.models import Project, ExecutionLog, Resource, Service
 from aws_environments.serializers import ServiceSerializer
 from aws_environments.utils import check_if_service_can_be_created
@@ -138,18 +142,23 @@ class AddDB(GenericAPIView):
     lookup_field = "slug"
 
     def get_queryset(self):
-        return Service.objects.filter(is_deleted=False, organization=self.request.user.organization)
+        return Service.objects.filter(
+            is_deleted=False, organization=self.request.user.organization
+        )
 
     def post(self, request, *args, **kwargs):
         _service = self.get_object()
         db = Resource.objects.filter(
             organization=self.request.user.organization,
             kind=Resource.Types.db,
-            slug=self.request.data["db_slug"]
+            slug=self.request.data["db_slug"],
         ).first()
 
         if not db:
-            return Response(data={"detail": "related resource not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                data={"detail": "related resource not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         exec_log = ExecutionLog.register(
             self.request.user.organization,

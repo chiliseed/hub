@@ -187,7 +187,7 @@ LOGGING = {
             "style": "{",
         },
     },
-    "handlers": {"console": {"class": "logging.StreamHandler",},},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": 'verbose'}, },
     "loggers": {
         "django": {
             "handlers": ["console"],

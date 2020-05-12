@@ -59,8 +59,7 @@ def put_task_definition(
     task_definition = client.register_task_definition(
         family=deploy_conf.service_name,
         executionRoleArn=deploy_conf.ecs_executor_role_arn,
-        cpu="128",
-        memory="150",
+        memory="250",
         containerDefinitions=[
             {
                 "name": deploy_conf.service_name,

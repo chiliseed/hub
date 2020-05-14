@@ -1,5 +1,7 @@
 -r base.txt
 
+colorama
+
 django-extensions
 
 black

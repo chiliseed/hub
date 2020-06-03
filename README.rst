@@ -15,40 +15,8 @@ Local Environment Requirements
 How To Install
 --------------
 
-1. Create virtual environment for the project:
-
-    .. code-block:: bash
-
-        mkdir chiliseed
-        cd chiliseed
-        mkdir backend
-        cd backend
-        python3 -m venv .venv
-
-2. Clone the repo inside ``backend``
-3. Install local requirements:
-
-    .. code-block:: bash
-
-        pip install -e cli_tools
-
-    This will install `tools` package, that contains cli utilities for easy
-    interactions with the environment.
-
-
-4. Run local environment:
-    .. code-block:: bash
-
-        tools start
-
-
-Local tools
------------
-
-``tools.py`` is a collection of cli shortcut for common action while developing.
-
-To see all available commands run:
-
-    .. code-block:: bash
-
-        ./tools.py --help
+1. Clone the repo to your local machine, ``cd`` into the directory containing the code.
+2. ``cp .env.template .env``
+3. Edit the values in ``.env``
+4. Download and install ``ddc-shob`` tool: https://github.com/chiliseed/django-compose-shob (readme has instructions for installation)
+5. To build and start the project run: ``ddc-shob start``

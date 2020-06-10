@@ -37,12 +37,12 @@ urlpatterns = [
         name="env_list_services",
     ),
     path(
-        "environment/<slug:env_slug>/add-db/",
+        "environment/<slug:env_slug>/add-db",
         CreateDatabaseResource.as_view(),
         name="create_db",
     ),
     path(
-        "environment/<slug:env_slug>/add-cache/",
+        "environment/<slug:env_slug>/add-cache",
         CreateCacheResource.as_view(),
         name="create_cache",
     ),

@@ -20,3 +20,4 @@ How To Install
 3. Edit the values in ``.env``
 4. Download and install ``ddc-shob`` tool: https://github.com/chiliseed/django-compose-shob (readme has instructions for installation)
 5. To build and start the project run: ``ddc-shob start``
+6. Create a user for yourself: ```docker-compose exec api python manage.py create_user dev@chiliseed.com 'Aa123ewq!' Demoer --is-superuser=True```

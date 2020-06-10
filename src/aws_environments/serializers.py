@@ -210,6 +210,9 @@ class CreateDatabaseSerializer(serializers.ModelSerializer):
 
 class CreateCacheSerializer(serializers.ModelSerializer):
     engine = serializers.ChoiceField(choices=[Resource.EngineTypes.redis])
+    project = serializers.SlugRelatedField(
+        slug_field="slug", queryset=Project.objects.all()
+    )
 
     class Meta:
         model = Resource
@@ -217,6 +220,7 @@ class CreateCacheSerializer(serializers.ModelSerializer):
             "name",
             "preset",
             "engine",
+            "project",
         )
 
 

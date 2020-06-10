@@ -24,7 +24,7 @@ from aws_environments.models import (
     Service,
 )
 from aws_environments.serializers import (
-    CreateDatabaseSerializer,
+    CreateCacheSerializer, CreateDatabaseSerializer,
     CreateS3BucketSerializer,
     ResourceSerializer,
 )
@@ -103,7 +103,7 @@ class CreateDatabaseResource(GenericAPIView):
 
 
 class CreateCacheResource(GenericAPIView):
-    serializer_class = CreateDatabaseSerializer
+    serializer_class = CreateCacheSerializer
     lookup_field = "slug"
     lookup_url_kwarg = "env_slug"
 

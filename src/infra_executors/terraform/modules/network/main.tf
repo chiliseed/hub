@@ -54,5 +54,5 @@ resource "aws_route" "private_nat_route" {
 # Therefore we use a workaround described here: https://github.com/hashicorp/terraform/issues/1178#issuecomment-207369534
 
 resource "null_resource" "network_null" {
-  depends_on = ["module.nat"]
+  depends_on = [module.nat]
 }

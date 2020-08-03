@@ -18,13 +18,13 @@ variable "vpc_cidr" {
 }
 
 variable "private_subnet_cidrs" {
-  type = "list"
+  type = list
 }
 
 variable "public_subnet_cidrs" {
-  type = "list"
+  type = list
 }
 
 variable "availability_zones" {
-  type = "list"
+  type = list
 }

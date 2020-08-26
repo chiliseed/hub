@@ -212,6 +212,11 @@ class Base(Configuration):
             "console_structlog_key_value": {"class": "logging.StreamHandler", "formatter": "key_value"},
         },
         "loggers": {
+            "": {
+                "handlers": ["console_structlog_plain"],
+                "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+                "propagate": True,
+            },
             "django": {
                 "handlers": ["console_structlog_plain"],
                 "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
@@ -245,7 +250,6 @@ class Base(Configuration):
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.processors.ExceptionPrettyPrinter(),
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         context_class=structlog.threadlocal.wrap_dict(dict),

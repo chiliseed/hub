@@ -72,7 +72,7 @@ def launch_project_infra(
 
     logger.info("Creating alb.")
     alb_conf = ALBConfigs(
-        alb_name=f"{common_conf.project_name}-{common_conf.env_name}-{common_conf.env_slug}",
+        alb_name=f"{common_conf.project_name}-{common_conf.env_slug}",
         open_ports=[],
     )
     alb = create_alb(creds, common_conf, alb_conf)

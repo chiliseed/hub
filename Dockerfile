@@ -27,9 +27,9 @@ RUN apt-get update && apt-get upgrade -y && \
     wget https://releases.hashicorp.com/terraform-provider-null/2.1.2/terraform-provider-null_2.1.2_linux_amd64.zip && \
     unzip terraform-provider-null_2.1.2_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
     rm -rf terraform-provider-null_2.1.2_linux_amd64.zip && \
-    wget https://releases.hashicorp.com/terraform-provider-random/2.2.1/terraform-provider-random_2.2.1_linux_amd64.zip && \
-    unzip terraform-provider-random_2.2.1_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
-    rm -rf terraform-provider-random_2.2.1_linux_amd64.zip && \
+    wget https://releases.hashicorp.com/terraform-provider-random/2.3.0/terraform-provider-random_2.3.0_linux_amd64.zip && \
+    unzip terraform-provider-random_2.3.0_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
+    rm -rf terraform-provider-random_2.3.0_linux_amd64.zip && \
     wget https://releases.hashicorp.com/terraform-provider-template/2.1.2/terraform-provider-template_2.1.2_linux_amd64.zip && \
     unzip terraform-provider-template_2.1.2_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
     rm -rf terraform-provider-template_2.1.2_linux_amd64.zip && \

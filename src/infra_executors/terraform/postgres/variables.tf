@@ -1,5 +1,4 @@
-variable "environment" {
-  default     = "development"
+variable "env_name" {
   description = "The name of the environment being built. This will be used to tag all resources."
   type        = string
 }

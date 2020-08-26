@@ -1,14 +1,14 @@
 terraform {
-  required_version = ">=0.12.1"
+  required_version = ">=0.12.29"
   backend "s3" {
     bucket = "chiliseed-dev-terraform-states"
     region = "us-east-2"
     //    key    = "path/to.tfstate"  this will be provided on runtime
   }
   required_providers {
-    aws      = "~> 2.54.0"
+    aws      = "~> 2.70.0"
     null     = "~> 2.1.2"
-    random   = "~> 2.2.1"
+    random   = "~> 2.3.0"
     template = "~> 2.1.2"
   }
 }
@@ -42,6 +42,7 @@ resource "aws_alb" "alb" {
   tags = {
     Environment = var.env_name
     Name        = var.alb_name
+    Project     = var.project_name
   }
 }
 
@@ -70,13 +71,14 @@ resource "aws_alb_target_group" "this" {
   health_check {
     path     = var.open_ports[count.index].health_check_endpoint
     protocol = var.open_ports[count.index].health_check_protocol
-    port = "traffic-port"  // setting up dynamic ports
+    port     = "traffic-port" // setting up dynamic ports
   }
 
   tags = {
     Environment = var.env_name
     Name        = var.open_ports[count.index].name
     Type        = var.internal ? "internal" : "public"
+    Project     = var.project_name
   }
 }
 

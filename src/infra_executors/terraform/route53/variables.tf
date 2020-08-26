@@ -3,9 +3,8 @@ variable "domain" {
   description = "Domain name. Example: example.com"
 }
 
-variable "enviroment" {
+variable "env_name" {
   type = string
-  default = "development"
   description = "Name of the environment. All resources will be tagged with this."
 }
 

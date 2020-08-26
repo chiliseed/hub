@@ -8,8 +8,7 @@
 # AWS_DEFAULT_REGION
 # AWS_SESSION_TOKEN - if the role has mfa enabled
 
-variable "environment" {
-  default     = "development"
+variable "env_name" {
   description = "The name of the environment being built. This will be used to tag all resources."
 }
 
@@ -18,13 +17,13 @@ variable "vpc_cidr" {
 }
 
 variable "private_subnet_cidrs" {
-  type = list
+  type = list(string)
 }
 
 variable "public_subnet_cidrs" {
-  type = list
+  type = list(string)
 }
 
 variable "availability_zones" {
-  type = list
+  type = list(string)
 }

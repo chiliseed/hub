@@ -1,7 +1,7 @@
 locals {
-  ingress = "ingress"
-  egress = "egress"
-  tcp = "TCP"
+  ingress       = "ingress"
+  egress        = "egress"
+  tcp           = "TCP"
   anywhere_cidr = "0.0.0.0/0"
 }
 
@@ -17,6 +17,7 @@ resource "aws_security_group" "alb" {
   tags = {
     Name        = "${var.env_name}_${var.alb_name}"
     Environment = var.env_name
+    Project     = var.project_name
   }
 }
 
@@ -37,7 +38,7 @@ resource "aws_security_group_rule" "listeners-https" {
   protocol          = local.tcp
   security_group_id = aws_security_group.alb.id
   type              = local.ingress
-  cidr_blocks = [local.anywhere_cidr]
+  cidr_blocks       = [local.anywhere_cidr]
 }
 
 resource "aws_security_group_rule" "listeners-http" {
@@ -48,5 +49,5 @@ resource "aws_security_group_rule" "listeners-http" {
   protocol          = local.tcp
   security_group_id = aws_security_group.alb.id
   type              = local.ingress
-  cidr_blocks = [local.anywhere_cidr]
+  cidr_blocks       = [local.anywhere_cidr]
 }

@@ -62,3 +62,7 @@ variable "alb_security_group_id" {
   type = string
   default = ""
 }
+
+variable "project_name" {
+  description = "Project name for which this alb is created"
+}

@@ -41,12 +41,16 @@ variable "deregistration_delay" {
 // alb_port -> used in alb listener, tells on what port alb is listening to incoming web traffic
 variable "open_ports" {
   type = list(object({
-    name = string
-    container_port = number
-    alb_port_https = number
-    alb_port_http = number
+    name                  = string
+    container_port        = number
+    alb_port_https        = number
+    alb_port_http         = number
     health_check_endpoint = string
     health_check_protocol = string
-    ssl_certificate_arn = string
+    ssl_certificate_arn   = string
   }))
+}
+
+variable "project_name" {
+  description = "Project name for which this alb is created"
 }

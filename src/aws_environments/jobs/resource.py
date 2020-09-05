@@ -65,7 +65,7 @@ def launch_database(resource_id, exec_log_id):
             allocated_storage=resource_conf.allocated_storage,
             username=resource_conf.username,
             password=resource_conf.password,
-            address=db_infra["master_instance_endpoint"]["value"],
+            address=db_infra["master_instance_endpoint"]["value"].split(":")[0],
             port=resource_conf.port,
             engine=resource_conf.engine,
             engine_version=resource_conf.engine_version,

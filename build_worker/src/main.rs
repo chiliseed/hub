@@ -102,7 +102,7 @@ fn main() {
     let dockerfile_path = Path::new(DEPLOYMENT_ROOT).join(dockerfile);
     let dockerfile_path_buf = dockerfile_path.canonicalize().unwrap();
     let absolute_dockerfile_path = dockerfile_path_buf.to_str().unwrap();
-    
+
     let aws_login = format!("aws ecr get-login-password | docker login --username AWS --password-stdin {}", ecr_url);
     let deployment_start = vec!["docker --version", &aws_login];
 

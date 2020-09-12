@@ -102,17 +102,7 @@ fn main() {
     let dockerfile_path = Path::new(DEPLOYMENT_ROOT).join(dockerfile);
     let dockerfile_path_buf = dockerfile_path.canonicalize().unwrap();
     let absolute_dockerfile_path = dockerfile_path_buf.to_str().unwrap();
-
-    let mut async_runtime = tokio::runtime::Runtime::new().unwrap();
-    let async_is_ecr_contains_image_tag = is_ecr_contains_image_tag(&opts.version, &ecr_url);
-    let tag_exist = async_runtime.block_on(async_is_ecr_contains_image_tag);
-    if tag_exist {
-        info!("Image tag {} already exists in repo.", opts.version);
-        return;
-    } else {
-        info!("Creating image");
-    }
-
+    
     let aws_login = format!("aws ecr get-login-password | docker login --username AWS --password-stdin {}", ecr_url);
     let deployment_start = vec!["docker --version", &aws_login];
 

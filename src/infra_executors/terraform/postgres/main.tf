@@ -53,7 +53,7 @@ module "master" {
   identifier = var.identifier
 
   engine            = "postgres"
-  engine_version    = "11.6"
+  engine_version    = "11.8"
   instance_class    = var.instance_type
   allocated_storage = var.allocated_storage
   storage_encrypted = false

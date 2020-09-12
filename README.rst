@@ -1,15 +1,23 @@
-==================
-Control Center API
-==================
+========================
+Chiliseed Control Center
+========================
 
-Control Center is the backend for all interactions with Chiliseed.
+Control center is a service that comes with production ready, pre-defined and optimized architectures
+for deploying projects to AWS. Each piece of infrastructure is configured using terraform.
+Chiliseed combines all the pieces to provide a cohesive architecture, according to best practices.
 
-Local Environment Requirements
-------------------------------
+Why?
+----
 
-1. Docker engine >= 19.03.2
-2. Docker compose >= 1.24.1
-3. Python == 3.7
+We've deployed many projects and defined same infrastructure time and again. There are many ready terraform configurations
+out there, open sourced for everyone to use, but it still requires knowledge of what exactly is needed and then how to configure it.
+This project aims to provide ready-made architecture, incorporating best practices, so that we won't need to re-invent the wheel.
+
+System Requirements
+-------------------
+
+1. Latest docker engine
+2. Latest docker compose
 
 
 How To Install

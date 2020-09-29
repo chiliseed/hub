@@ -1,0 +1,88 @@
+version: "3.7"
+services:
+
+  db:
+    image: postgres:12.3
+    restart: always
+    container_name: chiliseed_db
+    hostname: postgres
+    volumes: # map data outside the container
+      - ./pg/local/data/postgres/data:/var/lib/postgres
+      - ./pg/local/data/postgresql/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-chiliseed}
+      POSTGRES_USER: ${DB_USER:-chiliseed}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-chiliseedhub}
+    networks:
+      - chiliseed
+
+  rabbitmq:
+    image: rabbitmq:3.8.2-management
+    restart: always
+    container_name: chiliseed_queue
+    hostname: chiliseed-rabbit
+    ports:
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-chiliseed}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-chiliseedhub}
+    networks:
+      - chiliseed
+
+  api:
+    image: chiliseed/hub-api:latest
+    container_name: chiliseed_api
+    restart: always
+    environment:
+      DEBUG: ${DEBUG:-True}
+      DB_NAME: ${DB_NAME:-chiliseed}
+      DB_USER: ${DB_USER:-chiliseed}
+      DB_PASSWORD: ${DB_PASSWORD:-chiliseedhub}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_HOST: db
+      DJANGO_SETTINGS_MODULE: control_center.settings
+      ALLOWED_HOSTS: localhost,127.0.0.1,[::1]
+      SECRET_KEY: ${SECRET_KEY:-hKFqIzLhsL4ImyHbBj2SEcGV420bVx5RioxL3AmnQerpXjSde+}
+      RABBITMQ_USER: ${RABBITMQ_USER:-chiliseed}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-chiliseedhub}
+      RABBITMQ_HOST: rabbitmq
+    ports:
+      - "8000:8000"
+    links:
+      - db
+    depends_on:
+      - db
+    networks:
+      - chiliseed
+
+  scheduler:
+    image: chiliseed/hub-scheduler:latest
+    container_name: chiliseed_scheduler
+    restart: always
+    environment:
+      DEBUG: ${DEBUG:-True}
+      DB_NAME: ${DB_NAME:-chiliseed}
+      DB_USER: ${DB_USER:-chiliseed}
+      DB_PASSWORD: ${DB_PASSWORD:-chiliseedhub}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_HOST: db
+      DJANGO_SETTINGS_MODULE: control_center.settings
+      ALLOWED_HOSTS: localhost,127.0.0.1,[::1]
+      SECRET_KEY: ${SECRET_KEY:-hKFqIzLhsL4ImyHbBj2SEcGV420bVx5RioxL3AmnQerpXjSde+}
+      RABBITMQ_USER: ${RABBITMQ_USER:-chiliseed}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-chiliseedhub}
+      RABBITMQ_HOST: rabbitmq
+    links:
+      - db
+      - rabbitmq
+    depends_on:
+      - db
+      - rabbitmq
+    networks:
+      - chiliseed
+
+
+networks:
+  chiliseed:

@@ -5,3 +5,6 @@ docker-compose.yml
 .git/
 __pycache__/
 pg/
+.vscode/
+.pytest_cache/
+build_worker/

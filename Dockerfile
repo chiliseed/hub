@@ -1,4 +1,4 @@
-FROM python:3.8.5-slim-buster
+FROM python:3.8.5-slim-buster AS api
 
 LABEL maintainer="Chiliseed LTD"
 
@@ -46,3 +46,9 @@ VOLUME ["./src/infra_executors/terraform_plans"]
 VOLUME ["./src/infra_executors/exec_logs"]
 VOLUME ["./src/infra_executors/key_pairs"]
 
+CMD bash /app/runner.sh
+
+
+FROM api AS scheduler
+
+CMD bash /app/scheduler_runner.sh

@@ -53,12 +53,14 @@ module "master" {
   identifier = var.identifier
 
   engine            = "postgres"
-  engine_version    = "11.8"
+  engine_version    = "12.4"
   instance_class    = var.instance_type
   allocated_storage = var.allocated_storage
-  storage_encrypted = false
+  storage_encrypted = true
 
-  major_engine_version = "11"
+  major_engine_version = "12"
+
+  auto_minor_version_upgrade = true
 
   name = var.name
 
@@ -74,6 +76,8 @@ module "master" {
   backup_retention_period = 1
 
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  create_monitoring_role = true
+  monitoring_role_name = "${var.identifier}-monitor"
 
   # DB subnet group
   subnet_ids = data.aws_subnet_ids.private.ids
@@ -85,7 +89,7 @@ module "master" {
   deletion_protection = false
 
   # DB parameter group
-  family               = "postgres11"
+  family               = "postgres12"
 }
 
 
@@ -97,7 +101,7 @@ module "read-replica" {
   replicate_source_db = module.master.this_db_instance_id
 
   engine            = "postgres"
-  engine_version    = "11.6"
+  engine_version    = "12.4"
   instance_class    = var.instance_type
   allocated_storage = var.allocated_storage
   storage_encrypted = false
@@ -129,5 +133,5 @@ module "read-replica" {
   major_engine_version = "11"
 
   # DB parameter group
-  family               = "postgres11"
+  family               = "postgres12"
 }

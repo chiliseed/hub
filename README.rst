@@ -47,6 +47,42 @@ How to Run Locally
 3. Install chiliseed cli: :code:`brew install chiliseed/homebrew-tools/chiliseed`
 
 
+Terminology
+-----------
+
+Following terms will be repeated everywhere and to make sure we all understand each other:
+
++-------------------+-----------------------------------------------------------+----------------------------------------+
+| Name              | Description                                               | Related infra parts                    |
++===================+===========================================================+========================================+
+| **Environment**   | The most basic encapsulating unit,                        | VPC, subnets, NAT gateway, Route 53    |
+|                   | describes and manages global components that will relate  | hosted zone.                           |
+|                   | to all your deployed apps. a.k.a staging/production/dev.  |                                        |
++-------------------+-----------------------------------------------------------+----------------------------------------+
+| **Project**       | Umbrella for deployed components. Your code-base          | ALB, key pair, ECS cluster, ASG for    |
+|                   | that might comprise of one or more services.              | EC2.                                   |
++-------------------+-----------------------------------------------------------+----------------------------------------+
+| **Service**       | The actual unit of work, api service, background worker.  | ECS service, ECR, alb listeners/target |
+|                   | Your code that needs to do some business logic.           | groups, ACM, service discovery.        |
++-------------------+-----------------------------------------------------------+----------------------------------------+
+| **Resource**      | These are your databases/caches/s3 buckets.               | RDS, ElasiCache, S3                    |
++-------------------+-----------------------------------------------------------+----------------------------------------+
+
+
+How to Get Started
+------------------
+
+Once you have Chiliseed hub running, you will need to provide AWS credentials in order to start deploying
+to the cloud.
+
+To get AWS credentials, you will first have to signup `here <https://portal.aws.amazon.com/billing/signup#/start>`_ for an AWS account.
+
+Once you have an account, create new user for Chiliseed with admin privileges and programmatic access.
+This is required in order to allow the hub to modify the infrastructure on your behalf.
+Remember the keys, as you will need to provide them to the system.
+
+
+
 Local Development
 -----------------
 

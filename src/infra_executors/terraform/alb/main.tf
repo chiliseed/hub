@@ -117,17 +117,3 @@ resource "aws_alb_listener" "http-to-https" {
     }
   }
 }
-
-// if we don't have ssl, forward to target groups
-//resource "aws_alb_listener" "http" {
-//  count = var.open_ports[count.index].ssl_certificate_arn == "" ? length(aws_alb_target_group.this) : 0
-//
-//  load_balancer_arn = aws_alb.alb.id
-//  port              = var.open_ports[count.index].alb_port_http
-//  protocol = "HTTP"
-//
-//  default_action {
-//    type = "forward"
-//    target_group_arn = aws_alb_target_group.this[count.index].arn
-//  }
-//}

@@ -1,4 +1,4 @@
-FROM python:3.8.5-slim-buster AS api
+FROM python:3.8.6-slim-buster AS api
 
 LABEL maintainer="Chiliseed LTD"
 
@@ -18,9 +18,9 @@ RUN apt-get update && apt-get upgrade -y && \
         postgresql-client \
         wget && \
     pip install -U pip ipython && \
-    wget https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip && \
-    unzip terraform_0.12.29_linux_amd64.zip -d /usr/local/bin && \
-    rm -rf terraform_0.12.29_linux_amd64.zip && \
+    wget https://releases.hashicorp.com/terraform/0.13.04/terraform_0.13.04_linux_amd64.zip && \
+    unzip terraform_0.13.04_linux_amd64.zip -d /usr/local/bin && \
+    rm -rf terraform_0.13.04_linux_amd64.zip && \
     wget https://releases.hashicorp.com/terraform-provider-aws/2.70.0/terraform-provider-aws_2.70.0_linux_amd64.zip && \
     unzip terraform-provider-aws_2.70.0_linux_amd64.zip -d ~/.terraform.d/plugins/linux_amd64 && \
     rm -rf terraform-provider-aws_2.70.0_linux_amd64.zip && \

@@ -72,15 +72,98 @@ Following terms will be repeated everywhere and to make sure we all understand e
 How to Get Started
 ------------------
 
-Once you have Chiliseed hub running, you will need to provide AWS credentials in order to start deploying
-to the cloud.
+Once you have Chiliseed hub running, you will need a set of AWS credentials and at least one user in the hub.
+
+AWS Credentials
+^^^^^^^^^^^^^^^
 
 To get AWS credentials, you will first have to signup `here <https://portal.aws.amazon.com/billing/signup#/start>`_ for an AWS account.
 
-Once you have an account, create new user for Chiliseed with admin privileges and programmatic access.
+Once you have an account, create a new user for Chiliseed, assign it to Admins group and select programmatic access.
 This is required in order to allow the hub to modify the infrastructure on your behalf.
 Remember the keys, as you will need to provide them to the system.
 
+Each environment can have different set of aws keys. This allows the hub to maintain staging in
+account A and production in account B.
+
+Hub User
+^^^^^^^^
+
+Hub has a built-in command to create new users:
+
+.. code-block:: bash
+
+    docker-compose exec api python manage.py create_user <email> <password> <organization-name>
+
+You can also assign the user admin privileges by providing: ``--is-superuser=True`` flag.
+
+Whoever will be operating the hub, should have admin privileges.
+
+Chiliseed CLI
+^^^^^^^^^^^^^
+
+With a set of aws and chiliseed credentials in hand, you can now start creating and deploying to the cloud.
+
+1. To simplify your work with chiliseed, export to env your Chiliseed user credentials:
+
+    .. code-block:: bash
+
+        export CHILISEED_USERNAME=<email>
+        export CHILISEED_PASSWORD=<password>
+
+2. Create an environment:
+
+    .. code-block:: bash
+
+        chiliseed environment create staging example.com
+
+3. Create a project:
+
+    .. code-block:: bash
+
+        chiliseed project create <project name, i.e hub>
+
+4. Create a service:
+
+    .. code-block:: bash
+
+        chiliseed service create
+
+5. Create environment variables for your service:
+
+    .. code-block:: bash
+
+        chiliseed env_vars create <key> <value>
+
+6. Create postgres rds:
+
+    .. code-block:: bash
+
+        chiliseed db create
+
+7. Connect service to the rds:
+
+    .. code-block:: bash
+
+        chiliseed db list
+
+Copy the identifier of the db you want to connect to the service.
+
+    .. code-block:: bash
+
+        chiliseed service add-db <db-identifier>
+
+8. Create s3 bucket for your service:
+
+    .. code-block:: bash
+
+        chiliseed service add-statics
+
+9. Deploy your service (run this from inside the root directory of service code base):
+
+    .. code-block:: bash
+
+        chiliseed service deploy
 
 
 Local Development

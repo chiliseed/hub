@@ -110,6 +110,11 @@ With a set of aws and chiliseed credentials in hand, you can now start creating 
 
         export CHILISEED_USERNAME=<email>
         export CHILISEED_PASSWORD=<password>
+        export AWS_ACCESS_KEY_ID=<aws access key id>
+        export AWS_SECRET_ACCESS_KEY=<aws access secret>
+
+    **NOTE** if you don't provide specific aws credentials, chiliseed will attempt to pull them from
+    default configuration locations.
 
 2. Create an environment:
 
@@ -147,7 +152,7 @@ With a set of aws and chiliseed credentials in hand, you can now start creating 
 
         chiliseed db list
 
-Copy the identifier of the db you want to connect to the service.
+    Copy the identifier of the db you want to connect to the service.
 
     .. code-block:: bash
 

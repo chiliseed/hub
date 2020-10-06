@@ -49,7 +49,7 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-chiliseedhub}
       RABBITMQ_HOST: rabbitmq
     ports:
-      - "8000:8000"
+      - "8020:8000"
     links:
       - db
     depends_on:

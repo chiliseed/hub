@@ -2,8 +2,8 @@
 Chiliseed Hub
 =============
 
-Chiliseed hub is a service that manages pre-defined, production ready architectures for deploying containerized applications to AWS.
-Each piece of infrastructure has a corresponding executor that manages it, and the hub combines all the pieces to provide a cohesive architecture, according to best practices.
+Chiliseed Hub is a service that manages pre-defined, production ready architectures for deploying containerized applications to AWS.
+Each piece of infrastructure has a corresponding executor that manages it, and the Hub combines all the pieces to provide a cohesive architecture, according to best practices.
 
 Why?
 ----

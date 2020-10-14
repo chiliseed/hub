@@ -44,7 +44,7 @@ services:
       DB_HOST: db
       DJANGO_SETTINGS_MODULE: control_center.settings
       ALLOWED_HOSTS: localhost,127.0.0.1,[::1]
-      SECRET_KEY: ${SECRET_KEY:-hKFqIzLhsL4ImyHbBj2SEcGV420bVx5RioxL3AmnQerpXjSde+}
+      SECRET_KEY: ${SECRET_KEY}
       RABBITMQ_USER: ${RABBITMQ_USER:-chiliseed}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-chiliseedhub}
       RABBITMQ_HOST: rabbitmq
@@ -70,7 +70,7 @@ services:
       DB_HOST: db
       DJANGO_SETTINGS_MODULE: control_center.settings
       ALLOWED_HOSTS: localhost,127.0.0.1,[::1]
-      SECRET_KEY: ${SECRET_KEY:-hKFqIzLhsL4ImyHbBj2SEcGV420bVx5RioxL3AmnQerpXjSde+}
+      SECRET_KEY: ${SECRET_KEY}
       RABBITMQ_USER: ${RABBITMQ_USER:-chiliseed}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-chiliseedhub}
       RABBITMQ_HOST: rabbitmq

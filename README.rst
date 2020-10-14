@@ -45,9 +45,25 @@ How to Run Locally
 ------------------
 
 
-1. Download `docker-compose.public.yml` to your machine
-2. Run :code:`docker-compose up -d` from a directory containing the docker compose you downloaded
-3. Install chiliseed cli: :code:`brew install chiliseed/homebrew-tools/chiliseed`
+1. Download :code:`docker-compose.public.yml` to your machine
+2. Check secret key by running in terminal: :code:`base64 /dev/urandom | head -c50`
+3. Export to environment :code:`export SECRET_KEY=<value from step 2>`
+4. Run :code:`docker-compose up -d` from a directory containing the docker compose you downloaded
+5. Install chiliseed cli:
+
+    On Mac:
+        .. code-block:: bash
+
+            brew install chiliseed/homebrew-tools/chiliseed
+
+    On Linux:
+        .. code-block:: bash
+
+            curl -O https://github.com/chiliseed/cli/releases/download/0.1.2/chiliseed_0.1.2.x86_64-linux.tar.gz
+            tar -xvzf chiliseed-0.1.2.x86_64-linux.tar.gz
+            mv chiliseed /usr/local/bin/
+
+        **NOTE** You might need to install ``openssl-sys`` (Debian/Ubuntu ``sudo apt-get install pkg-config libssl-dev``)
 
 
 Terminology

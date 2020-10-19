@@ -40,7 +40,7 @@ class ExecutionLog(BaseModel):
     action = models.CharField(
         max_length=50, choices=ActionTypes.choices, null=False, blank=False
     )
-    is_success = models.NullBooleanField(null=True, blank=True)
+    is_success = models.BooleanField(null=True)
     ended_at = models.DateTimeField(null=True, blank=True)
 
     # specific execution params provided by the user

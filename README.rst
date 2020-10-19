@@ -75,14 +75,14 @@ The following terms will be repeated everywhere so be sure to familiarize yourse
 | Name              | Description                                               | Related infra parts                    |
 +===================+===========================================================+========================================+
 | **Environment**   | The most basic encapsulating unit,                        | VPC, subnets, NAT gateway, Route 53    |
-|                   | describes and manages global components that will relate  | hosted zone                           |
-|                   | to all your deployed apps. e.g. staging/production/dev.  |                                        |
+|                   | describes and manages global components that will relate  | hosted zone                            |
+|                   | to all your deployed apps. e.g. staging/production/dev.   |                                        |
 +-------------------+-----------------------------------------------------------+----------------------------------------+
 | **Project**       | Umbrella for deployed components. Your code-base          | ALB, key pair, ECS cluster, ASG for    |
-|                   | that might be comprised of one or more services.              | EC2                                   |
+|                   | that might be comprised of one or more services.          | EC2                                    |
 +-------------------+-----------------------------------------------------------+----------------------------------------+
 | **Service**       | The actual unit of work, api service, background worker.  | ECS service, ECR, alb listeners/target |
-|                   | Your code that needs to do some business logic.           | groups, ACM, service discovery        |
+|                   | Your code that needs to do some business logic.           | groups, ACM, service discovery         |
 +-------------------+-----------------------------------------------------------+----------------------------------------+
 | **Resource**      | These are your databases/caches/s3 buckets.               | RDS, ElasiCache, S3                    |
 +-------------------+-----------------------------------------------------------+----------------------------------------+
